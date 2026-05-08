@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schema Generator — Ring Ring Marketing</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #202124;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: #1a56db;
+      color: white;
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+    .header .brand { font-size: 12px; opacity: 0.75; }
+
+    .tabs {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 0 20px;
+      display: flex;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .tab {
+      padding: 11px 18px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #5f6368;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      border-radius: 4px 4px 0 0;
+    }
+    .tab:hover { color: #1a56db; background: #f0f4ff; }
+    .tab.active { color: #1a56db; border-bottom-color: #1a56db; }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    .form-panel {
+      width: 48%;
+      overflow-y: auto;
+      padding: 22px 24px;
+      background: white;
+      border-right: 1px solid #e0e0e0;
+    }
+
+    .preview-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #1e1e1e;
+    }
+    .preview-header {
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #2d2d2d;
+      border-bottom: 1px solid #3d3d3d;
+      flex-shrink: 0;
+    }
+    .preview-header span { color: #9cdcfe; font-family: 'Consolas', 'Courier New', monospace; font-size: 12.5px; }
+    .copy-btn {
+      background: #1a56db;
+      color: white;
+      border: none;
+      padding: 5px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: #1348b8; }
+    .copy-btn.copied { background: #0d7c3d; }
+    .preview-content { flex: 1; overflow-y: auto; padding: 16px 18px; }
+    .preview-content pre {
+      color: #d4d4d4;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .section { margin-bottom: 26px; }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1a56db;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      margin-bottom: 13px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #e8eeff;
+    }
+
+    .field { margin-bottom: 11px; }
+    .field label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #3c4043;
+      margin-bottom: 4px;
+    }
+    .field label .req { color: #d93025; }
+    .field label .hint { font-weight: 400; color: #80868b; font-size: 11.5px; }
+    .field input[type="text"],
+    .field input[type="url"],
+    .field input[type="time"],
+    .field textarea,
+    .field select {
+      width: 100%;
+      padding: 7px 9px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 12.5px;
+      color: #202124;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      background: white;
+      font-family: inherit;
+    }
+    .field input:focus, .field textarea:focus, .field select:focus {
+      border-color: #1a56db;
+      box-shadow: 0 0 0 2px rgba(26,86,219,0.1);
+    }
+    .field textarea { resize: vertical; min-height: 66px; }
+
+    .field-row { display: grid; gap: 10px; }
+    .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 2px; }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12.5px;
+      color: #3c4043;
+      cursor: pointer;
+    }
+    .checkbox-item input[type="checkbox"] { cursor: pointer; width: 14px; height: 14px; }
+
+    /* Mode toggle */
+    .mode-toggle {
+      display: flex;
+      gap: 0;
+      border: 1px solid #dadce0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border: none;
+      background: white;
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #5f6368;
+      transition: background 0.15s, color 0.15s;
+      text-align: center;
+    }
+    .mode-btn:not(:last-child) { border-right: 1px solid #dadce0; }
+    .mode-btn.active { background: #1a56db; color: white; }
+    .mode-btn:not(.active):hover { background: #f0f4ff; color: #1a56db; }
+
+    /* Location blocks */
+    .location-block {
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 14px 14px 10px;
+      margin-bottom: 10px;
+      background: #fafbff;
+    }
+    .block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 11px;
+    }
+    .block-title { font-size: 12px; font-weight: 700; color: #1a56db; }
+    .remove-btn {
+      background: none;
+      border: 1px solid #dadce0;
+      color: #80868b;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11.5px;
+      transition: all 0.15s;
+    }
+    .remove-btn:hover { border-color: #d93025; color: #d93025; background: #fce8e6; }
+    .add-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 13px;
+      border: 1px dashed #1a56db;
+      color: #1a56db;
+      background: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 500;
+      margin-top: 2px;
+      transition: background 0.15s;
+    }
+    .add-btn:hover { background: #f0f4ff; }
+
+    .sub-section {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #e0e0e0;
+    }
+    .sub-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #80868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    /* FAQ pairs */
+    .faq-pair {
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 13px 14px 10px;
+      margin-bottom: 9px;
+      background: #fafbff;
+    }
+    .faq-pair-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .faq-pair-num { font-size: 11.5px; font-weight: 700; color: #1a56db; }
+
+    .info-note {
+      background: #e8f0fe;
+      border-left: 3px solid #1a56db;
+      padding: 8px 10px;
+      border-radius: 0 4px 4px 0;
+      font-size: 12px;
+      color: #3c4043;
+      margin-bottom: 14px;
+    }
+
+    /* knowsAbout checkbox groups */
+    .ka-groups { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+    .ka-group { border: 1px solid #e8eeff; border-radius: 5px; padding: 9px 11px; background: #fafbff; }
+    .ka-group-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #1a56db;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 7px;
+    }
+    .ka-group .checkbox-group { gap: 5px 14px; }
+
+    /* Custom identifier input */
+    .identifier-custom { margin-top: 7px; }
+
+    /* FAQ link builder helper */
+    .link-helper {
+      display: flex;
+      gap: 6px;
+      margin-top: 5px;
+      align-items: center;
+    }
+    .link-helper input {
+      flex: 1;
+      padding: 5px 8px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 11.5px;
+      color: #202124;
+      outline: none;
+      font-family: inherit;
+      background: white;
+    }
+    .link-helper input:focus { border-color: #1a56db; box-shadow: 0 0 0 2px rgba(26,86,219,0.1); }
+    .link-helper input::placeholder { color: #aaa; }
+    .link-insert-btn {
+      white-space: nowrap;
+      padding: 5px 11px;
+      border: 1px solid #1a56db;
+      background: none;
+      color: #1a56db;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11.5px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .link-insert-btn:hover { background: #f0f4ff; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Schema Markup Generator</h1>
+    <span class="brand">Ring Ring Marketing</span>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-type="local-business">Local Business</button>
+    <button class="tab" data-type="service">Service</button>
+    <button class="tab" data-type="product">Product</button>
+    <button class="tab" data-type="faq">FAQ</button>
+    <button class="tab" data-type="article">Article</button>
+    <button class="tab" data-type="city-page">City Page</button>
+  </div>
+
+  <div class="main">
+    <div class="form-panel" id="form-panel"></div>
+    <div class="preview-panel">
+      <div class="preview-header">
+        <span id="preview-label">JSON-LD Output</span>
+        <button class="copy-btn" id="copy-btn">Copy</button>
+      </div>
+      <div class="preview-content">
+        <pre id="output"></pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+let currentType = 'local-business';
+let lbMode = 'homepage'; // 'homepage' or 'per-location'
+let cpMode  = 'single';  // 'single' or 'multi'
+
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  currentType = tab.dataset.type;
+  renderForm(currentType);
+  updatePreview();
+});
+
+// ── Form templates ────────────────────────────────────────────────────────────
+const forms = {
+
+  'local-business': () => `
+    <div class="mode-toggle" id="lb-mode-toggle">
+      <button class="mode-btn ${lbMode === 'homepage' ? 'active' : ''}" data-mode="homepage">Homepage (All Locations)</button>
+      <button class="mode-btn ${lbMode === 'per-location' ? 'active' : ''}" data-mode="per-location">Per-Location Pages</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Business Information</div>
+      <div class="field"><label>Business Name <span class="req">*</span></label>
+        <input type="text" id="lb-name" placeholder="e.g. Smith-Corcoran Funeral Homes"></div>
+      <div class="field"><label>Homepage URL <span class="req">*</span></label>
+        <input type="url" id="lb-url" placeholder="https://www.example.com/"></div>
+      <div class="field"><label>Description <span class="req">*</span></label>
+        <textarea id="lb-desc" rows="3" placeholder="Short business description..."></textarea></div>
+      <div class="field"><label>Disambiguating Description <span class="hint">(more specific)</span></label>
+        <textarea id="lb-disambig" rows="2" placeholder="Detailed description..."></textarea></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Main Phone Number</label>
+          <input type="text" id="lb-tel" placeholder="(555) 123-4567"></div>
+        <div class="field"><label>Price Range</label>
+          <select id="lb-price">
+            <option value="$">$</option><option value="$$">$$</option>
+            <option value="$$$">$$$</option><option value="$$$$" selected>$$$$</option>
+          </select></div>
+      </div>
+      <div class="field"><label>Payment Accepted</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" class="lb-payment" value="Cash" checked> Cash</label>
+          <label class="checkbox-item"><input type="checkbox" class="lb-payment" value="Credit Card" checked> Credit Card</label>
+          <label class="checkbox-item"><input type="checkbox" class="lb-payment" value="Check"> Check</label>
+        </div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Currencies Accepted</label>
+          <input type="text" id="lb-currency" value="USD"></div>
+        <div class="field"><label>Google Maps URL <span class="hint">(homepage hasMap)</span></label>
+          <input type="url" id="lb-map" placeholder="https://maps.app.goo.gl/..."></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Images &amp; Branding</div>
+      <div class="field"><label>Featured Image URL</label>
+        <input type="url" id="lb-image" placeholder="https://..."></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Business Identity</div>
+      <div class="field"><label>Alternate Names <span class="hint">(one per line)</span></label>
+        <textarea id="lb-altnames" rows="3" placeholder="funeral home&#10;funeral parlor&#10;mortuary&#10;crematory"></textarea></div>
+      <div class="field"><label>Business Type URL <span class="hint">(Wikidata additionalType)</span></label>
+        <input type="url" id="lb-addtype" placeholder="https://www.wikidata.org/wiki/Q1466031"></div>
+      <div class="field">
+        <label>Business Identifier <span class="hint">(productontology — select closest match)</span></label>
+        <select id="lb-identifier">
+          <option value="">— Select industry —</option>
+          <optgroup label="Funeral &amp; Death Care">
+            <option value="http://www.productontology.org/id/Funeral_home">Funeral Home</option>
+            <option value="http://www.productontology.org/id/Cremation">Cremation Service</option>
+            <option value="http://www.productontology.org/id/Cemetery">Cemetery</option>
+            <option value="http://www.productontology.org/id/Mortuary">Mortuary</option>
+          </optgroup>
+          <optgroup label="Senior &amp; Home Care">
+            <option value="http://www.productontology.org/id/Home_care">Home Care Agency</option>
+            <option value="http://www.productontology.org/id/Assisted_living">Assisted Living Facility</option>
+            <option value="http://www.productontology.org/id/Nursing_home_care">Nursing Home</option>
+            <option value="http://www.productontology.org/id/Hospice">Hospice</option>
+          </optgroup>
+          <optgroup label="Windows, Doors &amp; Exteriors">
+            <option value="http://www.productontology.org/id/Window">Window Company</option>
+            <option value="http://www.productontology.org/id/Door">Door Company</option>
+            <option value="http://www.productontology.org/id/Roof">Roofing Company</option>
+            <option value="http://www.productontology.org/id/Siding">Siding Company</option>
+          </optgroup>
+          <optgroup label="HVAC, Plumbing &amp; Utilities">
+            <option value="http://www.productontology.org/id/HVAC">HVAC Company</option>
+            <option value="http://www.productontology.org/id/Plumbing">Plumbing Company</option>
+            <option value="http://www.productontology.org/id/Air_conditioning">Air Conditioning</option>
+            <option value="http://www.productontology.org/id/Heating">Heating Company</option>
+          </optgroup>
+          <optgroup label="Construction &amp; Remodeling">
+            <option value="http://www.productontology.org/id/General_contractor">General Contractor</option>
+            <option value="http://www.productontology.org/id/Landscaping">Landscaping</option>
+            <option value="http://www.productontology.org/id/Flooring">Flooring Company</option>
+            <option value="http://www.productontology.org/id/Painting">Painting Company</option>
+          </optgroup>
+          <optgroup label="Pet Services">
+            <option value="http://www.productontology.org/id/Veterinarian">Veterinarian</option>
+            <option value="http://www.productontology.org/id/Animal_grooming">Pet Grooming</option>
+            <option value="http://www.productontology.org/id/Pet_cemetery">Pet Cemetery</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="__custom__">Custom URL...</option>
+          </optgroup>
+        </select>
+        <div class="identifier-custom" id="lb-identifier-custom-wrap" style="display:none">
+          <input type="url" id="lb-identifier-custom" placeholder="http://www.productontology.org/id/...">
+        </div>
+      </div>
+      <div class="field"><label>Knows Language</label>
+        <input type="text" id="lb-lang" value="en"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Locations</div>
+      <div id="lb-locations"></div>
+      <button class="add-btn" id="lb-add-location">+ Add Location</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Business Hours</div>
+      <div class="field"><label>Days of Week</label>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" class="lb-day" value="Monday" checked> Mon</label>
+          <label class="checkbox-item"><input type="checkbox" class="lb-day" value="Tuesday" checked> Tue</label>
+          <label class="checkbox-item"><input type="checkbox" class="lb-day" value="Wednesday" checked> Wed</label>
+          <label class="checkbox-item"><input type="checkbox" class="lb-day" value="Thursday" checked> Thu</label>
+          <label class="checkbox-item"><input type="checkbox" class="lb-day" value="Friday" checked> Fri</label>
+          <label class="checkbox-item"><input type="checkbox" class="lb-day" value="Saturday" checked> Sat</label>
+          <label class="checkbox-item"><input type="checkbox" class="lb-day" value="Sunday" checked> Sun</label>
+        </div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Opens</label><input type="time" id="lb-opens" value="00:00"></div>
+        <div class="field"><label>Closes</label><input type="time" id="lb-closes" value="23:59"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Services &amp; Social</div>
+      <div class="field"><label>Services Offered <span class="hint">(one per line)</span></label>
+        <textarea id="lb-services" rows="5" placeholder="Pre-Planning&#10;Funeral Services&#10;Burial Services&#10;Cremation Services&#10;Grief Support"></textarea></div>
+      <div class="field"><label>Social Media URLs <span class="hint">(one per line)</span></label>
+        <textarea id="lb-social" rows="2" placeholder="https://www.facebook.com/..."></textarea></div>
+      <div class="field"><label>Agent Name <span class="hint">(potentialAction agent, optional)</span></label>
+        <input type="text" id="lb-agent" placeholder="e.g. Jay Smith"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Founder</div>
+      <div class="field"><label>Founder Name</label>
+        <input type="text" id="lb-founder" placeholder="e.g. Jay Smith"></div>
+      <div class="field">
+        <label>Founder Knows About <span class="hint">(check all that apply — auto-suggests on identifier select)</span></label>
+        <div class="ka-groups">
+          <div class="ka-group">
+            <div class="ka-group-title">Funeral &amp; Death Care</div>
+            <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Funeral"> Funeral</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Cremation"> Cremation</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Burial"> Burial</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Cemetery"> Cemetery</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Embalming"> Embalming</label>
+            </div>
+          </div>
+          <div class="ka-group">
+            <div class="ka-group-title">Senior &amp; Home Care</div>
+            <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Home_care"> Home Care</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Assisted_living"> Assisted Living</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Nursing_home_care"> Nursing Home</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Hospice"> Hospice</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Dementia"> Dementia</label>
+            </div>
+          </div>
+          <div class="ka-group">
+            <div class="ka-group-title">Windows, Doors &amp; Exteriors</div>
+            <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Window"> Window</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Door"> Door</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Roof"> Roofing</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Siding"> Siding</label>
+            </div>
+          </div>
+          <div class="ka-group">
+            <div class="ka-group-title">HVAC, Plumbing &amp; Utilities</div>
+            <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/HVAC"> HVAC</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Plumbing"> Plumbing</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Air_conditioning"> Air Conditioning</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Heating"> Heating</label>
+            </div>
+          </div>
+          <div class="ka-group">
+            <div class="ka-group-title">Construction &amp; Remodeling</div>
+            <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/General_contractor"> General Contractor</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Landscaping"> Landscaping</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Flooring"> Flooring</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Painting"> Painting</label>
+            </div>
+          </div>
+          <div class="ka-group">
+            <div class="ka-group-title">Pet Services</div>
+            <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Veterinary_medicine"> Veterinary</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Animal_grooming"> Pet Grooming</label>
+              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Cremation"> Pet Cremation</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Work Location City</label>
+          <input type="text" id="lb-founding-city" placeholder="e.g. Chicago"></div>
+        <div class="field"><label>Work Location State</label>
+          <input type="text" id="lb-founding-state" placeholder="e.g. IL"></div>
+      </div>
+    </div>
+  `,
+
+  'service': () => `
+    <div class="section">
+      <div class="section-title">Service Information</div>
+      <div class="field"><label>Service Name <span class="req">*</span></label>
+        <input type="text" id="svc-name" placeholder="e.g. Cremation Packages"></div>
+      <div class="field"><label>Image URL</label>
+        <input type="url" id="svc-image" placeholder="https://..."></div>
+      <div class="field"><label>Description <span class="req">*</span></label>
+        <textarea id="svc-desc" rows="3" placeholder="Describe the service..."></textarea></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Offer Details</div>
+      <div class="field"><label>Page URL <span class="req">*</span></label>
+        <input type="url" id="svc-url" placeholder="https://www.example.com/service-page/"></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Price Currency</label>
+          <input type="text" id="svc-currency" value="USD"></div>
+        <div class="field"><label>Price</label>
+          <input type="text" id="svc-price" value="$$"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Provider (Business)</div>
+      <div class="field"><label>Business Name <span class="req">*</span></label>
+        <input type="text" id="svc-biz-name" placeholder="e.g. Howe-Peterson Funeral Home"></div>
+      <div class="field"><label>Business Website URL <span class="req">*</span></label>
+        <input type="url" id="svc-biz-url" placeholder="https://www.example.com/"></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Price Range</label>
+          <select id="svc-price-range">
+            <option value="$">$</option><option value="$$" selected>$$</option>
+            <option value="$$$">$$$</option><option value="$$$$">$$$$</option>
+          </select></div>
+        <div class="field"><label>Logo URL</label>
+          <input type="url" id="svc-logo" placeholder="https://..."></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Locations</div>
+      <div id="svc-locations"></div>
+      <button class="add-btn" id="svc-add-location">+ Add Location</button>
+    </div>
+  `,
+
+  'product': () => `
+    <div class="section">
+      <div class="section-title">Product Information</div>
+      <div class="field"><label>Product Name <span class="req">*</span></label>
+        <input type="text" id="prod-name" placeholder="e.g. Casket Sprays"></div>
+      <div class="field"><label>Image URL</label>
+        <input type="url" id="prod-image" placeholder="https://..."></div>
+      <div class="field"><label>Description <span class="req">*</span></label>
+        <textarea id="prod-desc" rows="3" placeholder="Describe the product..."></textarea></div>
+      <div class="field"><label>Page URL <span class="req">*</span></label>
+        <input type="url" id="prod-url" placeholder="https://www.example.com/product-page/"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Rating</div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Rating Value</label>
+          <input type="text" id="prod-rating" value="5"></div>
+        <div class="field"><label>Rating Count</label>
+          <input type="text" id="prod-rating-count" value="5"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Brand (Business)</div>
+      <div class="field"><label>Business Name <span class="req">*</span></label>
+        <input type="text" id="prod-biz-name" placeholder="e.g. Howe-Peterson Funeral Home"></div>
+      <div class="field"><label>Business Website URL <span class="req">*</span></label>
+        <input type="url" id="prod-biz-url" placeholder="https://www.example.com/"></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Price Range</label>
+          <select id="prod-price-range">
+            <option value="$">$</option><option value="$$" selected>$$</option>
+            <option value="$$$">$$$</option><option value="$$$$">$$$$</option>
+          </select></div>
+        <div class="field"><label>Logo URL</label>
+          <input type="url" id="prod-logo" placeholder="https://..."></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Locations</div>
+      <div id="prod-locations"></div>
+      <button class="add-btn" id="prod-add-location">+ Add Location</button>
+    </div>
+  `,
+
+  'faq': () => `
+    <div class="section">
+      <div class="section-title">FAQ Questions &amp; Answers</div>
+      <div id="faq-pairs"></div>
+      <button class="add-btn" id="faq-add-pair">+ Add Question</button>
+    </div>
+  `,
+
+  'city-page': () => `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:10px;">
+      <div class="info-note" style="margin-bottom:0;flex:1">Outputs a combined <strong>LocalBusiness + FAQPage</strong> in a single <code>@graph</code> block — for city/service-area landing pages.</div>
+      <button id="cp-reset-btn" class="remove-btn" style="white-space:nowrap;padding:6px 12px;">Reset Form</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Industry Preset</div>
+      <div class="field">
+        <label>Select Industry <span class="hint">(auto-fills Additional Type, Schema ID, and starter services)</span></label>
+        <select id="cp-industry">
+          <option value="">— Select to auto-fill —</option>
+          <option value="funeral">Funeral Homes &amp; Cremation</option>
+          <option value="assisted-living">Assisted Living Facilities</option>
+          <option value="home-health">Home Health</option>
+          <option value="windows-doors">Windows &amp; Doors</option>
+          <option value="window-covering">Window Covering</option>
+          <option value="cemetery">Cemeteries</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mode-toggle" id="cp-mode-toggle">
+      <button class="mode-btn ${cpMode === 'single' ? 'active' : ''}" data-mode="single">Single Location</button>
+      <button class="mode-btn ${cpMode === 'multi'  ? 'active' : ''}" data-mode="multi">Multiple Locations</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Page Info</div>
+      <div class="field"><label>Page URL <span class="req">*</span> <span class="hint">(URL where this schema installs)</span></label>
+        <input type="url" id="cp-page-url" placeholder="https://www.example.com/vinyl-siding-hilliard-oh/"></div>
+      <div class="field"><label>Schema ID Suffix <span class="hint">(keyword fragment after /#  —  e.g. siding, funeralhome)</span></label>
+        <input type="text" id="cp-schema-id" placeholder="e.g. siding"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Business Information</div>
+      <div class="field"><label>Business Name <span class="req">*</span></label>
+        <input type="text" id="cp-name" placeholder="e.g. Columbus Windows and Siding Company"></div>
+      <div class="field"><label>Homepage URL <span class="req">*</span></label>
+        <input type="url" id="cp-url" placeholder="https://www.example.com/"></div>
+      <div id="cp-tel-wrap" style="${cpMode === 'multi' ? 'display:none' : ''}">
+        <div class="field"><label>Phone Number <span class="hint">(single location only)</span></label>
+          <input type="text" id="cp-tel" placeholder="(555) 123-4567"></div>
+      </div>
+      <div class="field"><label>Image URL</label>
+        <input type="url" id="cp-image" placeholder="https://..."></div>
+      <div class="field"><label>Additional Type <span class="hint">(Wikipedia URL for business type)</span></label>
+        <input type="url" id="cp-addtype" placeholder="https://en.wikipedia.org/wiki/Siding_(construction)"></div>
+    </div>
+
+    <div class="section" id="cp-address-section" style="${cpMode === 'multi' ? 'display:none' : ''}">
+      <div class="section-title">Business Address</div>
+      <div class="field"><label>Street Address</label>
+        <input type="text" id="cp-street" placeholder="e.g. 705 Lakeview Plaza Blvd Ste H"></div>
+      <div class="field-row cols-3">
+        <div class="field"><label>City</label>
+          <input type="text" id="cp-city" placeholder="Columbus"></div>
+        <div class="field"><label>State</label>
+          <input type="text" id="cp-state" placeholder="OH"></div>
+        <div class="field"><label>Zip</label>
+          <input type="text" id="cp-zip" placeholder="43085"></div>
+      </div>
+      <div class="field" style="max-width:120px"><label>Country</label>
+        <input type="text" id="cp-country" value="US"></div>
+    </div>
+
+    <div class="section" id="cp-departments-section" style="${cpMode === 'single' ? 'display:none' : ''}">
+      <div class="section-title">Locations (Departments)</div>
+      <div id="cp-departments"></div>
+      <button class="add-btn" id="cp-add-dept">+ Add Location</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Area Served</div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Target City <span class="req">*</span></label>
+          <input type="text" id="cp-target-city" placeholder="Oceanside"></div>
+        <div class="field"><label>Target State <span class="req">*</span></label>
+          <input type="text" id="cp-target-state" placeholder="NY"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Services (Offer Catalog)</div>
+      <div class="field"><label>Catalog Name <span class="hint">(auto-filled from business name + area — edit if needed)</span></label>
+        <input type="text" id="cp-catalog-name" placeholder="Our [Business] Services in [City], [State]"></div>
+      <div id="cp-services"></div>
+      <button class="add-btn" id="cp-add-service">+ Add Service</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">FAQ Questions &amp; Answers</div>
+      <div id="cp-faq-pairs"></div>
+      <button class="add-btn" id="cp-add-faq">+ Add Question</button>
+    </div>
+  `,
+
+  'article': () => `
+    <div class="section">
+      <div class="section-title">Article Information</div>
+      <div class="field"><label>Headline <span class="req">*</span></label>
+        <input type="text" id="art-headline" placeholder="Article title..."></div>
+      <div class="field"><label>Description</label>
+        <textarea id="art-desc" rows="2" placeholder="Brief summary..."></textarea></div>
+      <div class="field"><label>Article URL <span class="req">*</span></label>
+        <input type="url" id="art-url" placeholder="https://..."></div>
+      <div class="field"><label>Image URL</label>
+        <input type="url" id="art-image" placeholder="https://..."></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Date Published</label>
+          <input type="text" id="art-published" placeholder="YYYY-MM-DD"></div>
+        <div class="field"><label>Date Modified</label>
+          <input type="text" id="art-modified" placeholder="YYYY-MM-DD"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Author</div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Author Name <span class="req">*</span></label>
+          <input type="text" id="art-author" placeholder="e.g. Jane Smith"></div>
+        <div class="field"><label>Author Type</label>
+          <select id="art-author-type">
+            <option value="Person">Person</option>
+            <option value="Organization">Organization</option>
+          </select></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Publisher</div>
+      <div class="field"><label>Publisher Name <span class="req">*</span></label>
+        <input type="text" id="art-pub-name" placeholder="e.g. Ring Ring Marketing"></div>
+      <div class="field"><label>Publisher Logo URL</label>
+        <input type="url" id="art-pub-logo" placeholder="https://..."></div>
+    </div>
+  `
+};
+
+// ── Location block HTML ───────────────────────────────────────────────────────
+function locationBlockHTML(prefix, index) {
+  return `
+    <div class="location-block" data-index="${index}">
+      <div class="block-header">
+        <span class="block-title">Location ${index + 1}</span>
+        <button class="remove-btn" onclick="removeLocation('${prefix}', ${index})">Remove</button>
+      </div>
+
+      <div class="field"><label>Branch / Location Name <span class="hint">(optional)</span></label>
+        <input type="text" class="${prefix}-loc-name" placeholder="e.g. Smith-Corcoran Chicago Funeral Home"></div>
+      <div class="field"><label>Street Address</label>
+        <input type="text" class="${prefix}-loc-street" placeholder="e.g. 6150 N Cicero Ave"></div>
+      <div class="field-row cols-3">
+        <div class="field"><label>City</label>
+          <input type="text" class="${prefix}-loc-city" placeholder="Chicago"></div>
+        <div class="field"><label>State</label>
+          <input type="text" class="${prefix}-loc-state" placeholder="IL"></div>
+        <div class="field"><label>Zip Code</label>
+          <input type="text" class="${prefix}-loc-zip" placeholder="60646"></div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Country</label>
+          <input type="text" class="${prefix}-loc-country" value="US"></div>
+        <div class="field"><label>Phone</label>
+          <input type="text" class="${prefix}-loc-phone" placeholder="(555) 123-4567"></div>
+      </div>
+
+      ${prefix === 'lb' ? `
+      <div class="sub-section">
+        <div class="sub-section-title">For Per-Location Schema</div>
+        <div class="field"><label>Location Page URL</label>
+          <input type="url" class="lb-loc-url" placeholder="https://www.example.com/about/chicago/"></div>
+        <div class="field"><label>hasMap URL <span class="hint">(Google Maps link for this branch)</span></label>
+          <input type="url" class="lb-loc-map" placeholder="https://maps.app.goo.gl/..."></div>
+      </div>
+
+      <div class="sub-section">
+        <div class="sub-section-title">Area Served (GeoCircle)</div>
+        <div class="field-row cols-3">
+          <div class="field"><label>Latitude</label>
+            <input type="text" class="lb-loc-lat" placeholder="41.99"></div>
+          <div class="field"><label>Longitude</label>
+            <input type="text" class="lb-loc-lng" placeholder="-87.74"></div>
+          <div class="field"><label>Radius (meters)</label>
+            <input type="text" class="lb-loc-radius" value="16093.4"></div>
+        </div>
+      </div>
+
+      <div class="sub-section">
+        <div class="sub-section-title">Geo Links (potentialAction sameAs)</div>
+        <div class="field"><label>Wikipedia URL</label>
+          <input type="url" class="lb-loc-wiki" placeholder="https://en.wikipedia.org/wiki/Chicago"></div>
+        <div class="field"><label>Wikidata URL</label>
+          <input type="url" class="lb-loc-wikidata" placeholder="https://www.wikidata.org/wiki/Q1297"></div>
+        <div class="field"><label>GeoNames URL</label>
+          <input type="url" class="lb-loc-geonames" placeholder="https://www.geonames.org/4887398/chicago.html"></div>
+      </div>
+      ` : ''}
+    </div>`;
+}
+
+// ── Service/Product address block (simpler) ───────────────────────────────────
+function serviceLocationHTML(prefix, index) {
+  return `
+    <div class="location-block" data-index="${index}">
+      <div class="block-header">
+        <span class="block-title">Location ${index + 1}</span>
+        <button class="remove-btn" onclick="removeLocation('${prefix}', ${index})">Remove</button>
+      </div>
+      <div class="field"><label>Street Address</label>
+        <input type="text" class="${prefix}-loc-street" placeholder="e.g. 22546 Michigan Ave"></div>
+      <div class="field-row cols-3">
+        <div class="field"><label>City</label>
+          <input type="text" class="${prefix}-loc-city" placeholder="Dearborn"></div>
+        <div class="field"><label>State</label>
+          <input type="text" class="${prefix}-loc-state" placeholder="MI"></div>
+        <div class="field"><label>Zip Code</label>
+          <input type="text" class="${prefix}-loc-zip" placeholder="48124"></div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Country</label>
+          <input type="text" class="${prefix}-loc-country" value="US"></div>
+        <div class="field"><label>Phone</label>
+          <input type="text" class="${prefix}-loc-phone" placeholder="(555) 123-4567"></div>
+      </div>
+    </div>`;
+}
+
+// ── FAQ pair HTML ─────────────────────────────────────────────────────────────
+function faqPairHTML(index) {
+  return `
+    <div class="faq-pair" data-index="${index}">
+      <div class="faq-pair-header">
+        <span class="faq-pair-num">Q${index + 1}</span>
+        <button class="remove-btn" onclick="removeFAQ(${index})">Remove</button>
+      </div>
+      <div class="field"><label>Question</label>
+        <input type="text" class="faq-q" placeholder="e.g. What is the difference between burial and cremation?"></div>
+      <div class="field">
+        <label>Answer</label>
+        <textarea class="faq-a" rows="2" placeholder="Answer text..."></textarea>
+        <div class="link-helper">
+          <input type="text" class="link-anchor" placeholder="Exact phrase to link">
+          <input type="url"  class="link-url"    placeholder="https://...">
+          <button class="link-insert-btn" onclick="insertFAQLink(this)">+ Link</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── City Page service / FAQ item HTML ─────────────────────────────────────────
+function cpServiceHTML(index) {
+  return `
+    <div class="faq-pair" data-index="${index}">
+      <div class="faq-pair-header">
+        <span class="faq-pair-num">Service ${index + 1}</span>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <button class="remove-btn" onclick="moveCPService(${index},-1)" title="Move up">▲</button>
+          <button class="remove-btn" onclick="moveCPService(${index},1)" title="Move down">▼</button>
+          <button class="remove-btn" onclick="removeCPService(${index})">Remove</button>
+        </div>
+      </div>
+      <div class="field"><label>Service Name</label>
+        <input type="text" class="cp-svc-name" placeholder="e.g. Vinyl Siding Replacement"></div>
+      <div class="field"><label>Description</label>
+        <textarea class="cp-svc-desc" rows="2" placeholder="Service description..."></textarea></div>
+    </div>`;
+}
+
+function cpFAQHTML(index) {
+  return `
+    <div class="faq-pair" data-index="${index}">
+      <div class="faq-pair-header">
+        <span class="faq-pair-num">Q${index + 1}</span>
+        <button class="remove-btn" onclick="removeCPFAQ(${index})">Remove</button>
+      </div>
+      <div class="field"><label>Question</label>
+        <input type="text" class="cp-faq-q" placeholder="e.g. Can I replace my windows while upgrading siding in [City], [State]?"></div>
+      <div class="field">
+        <label>Answer <span class="hint">(HTML &lt;a&gt; tags supported)</span></label>
+        <textarea class="cp-faq-a" rows="3" placeholder="Answer text..."></textarea>
+        <div class="link-helper">
+          <input type="text" class="link-anchor" placeholder="Exact phrase to link">
+          <input type="url"  class="link-url"    placeholder="https://...">
+          <button class="link-insert-btn" onclick="insertFAQLink(this)">+ Link</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── City Page department block HTML ───────────────────────────────────────────
+function cpDeptHTML(index) {
+  return `
+    <div class="location-block" data-index="${index}">
+      <div class="block-header">
+        <span class="block-title">Location ${index + 1}</span>
+        <button class="remove-btn" onclick="removeCPDept(${index})">Remove</button>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Location Label <span class="hint">(e.g. Island Park)</span></label>
+          <input type="text" class="cp-dept-label" placeholder="e.g. Island Park"></div>
+        <div class="field"><label>Location ID / Slug <span class="hint">(e.g. islandpark — no spaces)</span></label>
+          <input type="text" class="cp-dept-slug" placeholder="e.g. islandpark"></div>
+      </div>
+      <div class="field"><label>Phone</label>
+        <input type="text" class="cp-dept-phone" placeholder="(555) 123-4567"></div>
+      <div class="field"><label>Street Address</label>
+        <input type="text" class="cp-dept-street" placeholder="e.g. 3930 Long Beach Rd"></div>
+      <div class="field-row cols-3">
+        <div class="field"><label>City</label>
+          <input type="text" class="cp-dept-city" placeholder="Island Park"></div>
+        <div class="field"><label>State</label>
+          <input type="text" class="cp-dept-state" placeholder="NY"></div>
+        <div class="field"><label>Zip</label>
+          <input type="text" class="cp-dept-zip" placeholder="11558"></div>
+      </div>
+      <div class="field" style="max-width:120px"><label>Country</label>
+        <input type="text" class="cp-dept-country" value="US"></div>
+    </div>`;
+}
+
+// ── Render form ───────────────────────────────────────────────────────────────
+function renderForm(type) {
+  const panel = document.getElementById('form-panel');
+  panel.innerHTML = forms[type]();
+
+  if (type === 'local-business') {
+    document.getElementById('lb-mode-toggle').addEventListener('click', e => {
+      const btn = e.target.closest('.mode-btn');
+      if (!btn) return;
+      lbMode = btn.dataset.mode;
+      document.querySelectorAll('#lb-mode-toggle .mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updatePreview();
+    });
+    document.getElementById('lb-add-location').addEventListener('click', () => { addLocation('lb'); updatePreview(); });
+    addLocation('lb');
+  } else if (type === 'service') {
+    document.getElementById('svc-add-location').addEventListener('click', () => { addLocation('svc'); updatePreview(); });
+    addLocation('svc');
+  } else if (type === 'product') {
+    document.getElementById('prod-add-location').addEventListener('click', () => { addLocation('prod'); updatePreview(); });
+    addLocation('prod');
+  } else if (type === 'faq') {
+    document.getElementById('faq-add-pair').addEventListener('click', () => { addFAQPair(); updatePreview(); });
+    addFAQPair();
+    addFAQPair();
+  } else if (type === 'city-page') {
+    document.getElementById('cp-mode-toggle').addEventListener('click', e => {
+      const btn = e.target.closest('.mode-btn');
+      if (!btn) return;
+      cpMode = btn.dataset.mode;
+      document.querySelectorAll('#cp-mode-toggle .mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('cp-tel-wrap').style.display          = cpMode === 'multi' ? 'none' : '';
+      document.getElementById('cp-address-section').style.display   = cpMode === 'multi' ? 'none' : '';
+      document.getElementById('cp-departments-section').style.display = cpMode === 'single' ? 'none' : '';
+      updatePreview();
+    });
+    document.getElementById('cp-reset-btn').addEventListener('click', () => {
+      cpMode = 'single';
+      renderForm('city-page');
+      updatePreview();
+    });
+    document.getElementById('cp-industry').addEventListener('change', e => {
+      applyIndustryPreset(e.target.value);
+    });
+    document.getElementById('cp-add-service').addEventListener('click', () => { addCPService(); updatePreview(); });
+    document.getElementById('cp-add-faq').addEventListener('click', () => { addCPFAQ(); updatePreview(); });
+    document.getElementById('cp-add-dept').addEventListener('click', () => { addCPDept(); updatePreview(); });
+    addCPService();
+    addCPService();
+    addCPService();
+    addCPFAQ();
+    addCPFAQ();
+    addCPFAQ();
+    if (cpMode === 'multi') { addCPDept(); addCPDept(); }
+  }
+
+  panel.addEventListener('input', updatePreview);
+  panel.addEventListener('change', updatePreview);
+}
+
+// ── Add / remove location ─────────────────────────────────────────────────────
+function addLocation(prefix) {
+  const container = document.getElementById(`${prefix}-locations`);
+  const index = container.querySelectorAll('.location-block').length;
+  const html = (prefix === 'lb') ? locationBlockHTML(prefix, index) : serviceLocationHTML(prefix, index);
+  container.insertAdjacentHTML('beforeend', html);
+}
+
+function removeLocation(prefix, index) {
+  const container = document.getElementById(`${prefix}-locations`);
+  const blocks = container.querySelectorAll('.location-block');
+  if (blocks.length <= 1) return;
+  blocks[index].remove();
+  container.querySelectorAll('.location-block').forEach((b, i) => {
+    b.dataset.index = i;
+    b.querySelector('.block-title').textContent = `Location ${i + 1}`;
+    b.querySelector('.remove-btn').setAttribute('onclick', `removeLocation('${prefix}', ${i})`);
+  });
+  updatePreview();
+}
+
+// ── Add / remove FAQ pair ─────────────────────────────────────────────────────
+function addFAQPair() {
+  const container = document.getElementById('faq-pairs');
+  const index = container.querySelectorAll('.faq-pair').length;
+  container.insertAdjacentHTML('beforeend', faqPairHTML(index));
+}
+
+function removeFAQ(index) {
+  const container = document.getElementById('faq-pairs');
+  const pairs = container.querySelectorAll('.faq-pair');
+  if (pairs.length <= 1) return;
+  pairs[index].remove();
+  container.querySelectorAll('.faq-pair').forEach((p, i) => {
+    p.dataset.index = i;
+    p.querySelector('.faq-pair-num').textContent = `Q${i + 1}`;
+    p.querySelector('.remove-btn').setAttribute('onclick', `removeFAQ(${i})`);
+  });
+  updatePreview();
+}
+
+// ── City Page service / FAQ add + remove ──────────────────────────────────────
+function addCPService() {
+  const container = document.getElementById('cp-services');
+  const index = container.querySelectorAll('.faq-pair').length;
+  container.insertAdjacentHTML('beforeend', cpServiceHTML(index));
+}
+
+function removeCPService(index) {
+  const container = document.getElementById('cp-services');
+  const items = container.querySelectorAll('.faq-pair');
+  if (items.length <= 1) return;
+  items[index].remove();
+  container.querySelectorAll('.faq-pair').forEach((item, i) => {
+    item.dataset.index = i;
+    item.querySelector('.faq-pair-num').textContent = `Service ${i + 1}`;
+    item.querySelector('.remove-btn').setAttribute('onclick', `removeCPService(${i})`);
+  });
+  updatePreview();
+}
+
+function addCPFAQ() {
+  const container = document.getElementById('cp-faq-pairs');
+  const index = container.querySelectorAll('.faq-pair').length;
+  container.insertAdjacentHTML('beforeend', cpFAQHTML(index));
+}
+
+function removeCPFAQ(index) {
+  const container = document.getElementById('cp-faq-pairs');
+  const pairs = container.querySelectorAll('.faq-pair');
+  if (pairs.length <= 1) return;
+  pairs[index].remove();
+  container.querySelectorAll('.faq-pair').forEach((p, i) => {
+    p.dataset.index = i;
+    p.querySelector('.faq-pair-num').textContent = `Q${i + 1}`;
+    p.querySelector('.remove-btn').setAttribute('onclick', `removeCPFAQ(${i})`);
+  });
+  updatePreview();
+}
+
+// ── City Page industry preset apply ───────────────────────────────────────────
+function applyIndustryPreset(key) {
+  if (!key) return;
+  const preset = cpIndustryPresets[key];
+  if (!preset) return;
+
+  const addTypeField = document.getElementById('cp-addtype');
+  const schemaIdField = document.getElementById('cp-schema-id');
+  if (addTypeField)  addTypeField.value  = preset.additionalType;
+  if (schemaIdField) schemaIdField.value = preset.schemaId;
+
+  // Repopulate services
+  const container = document.getElementById('cp-services');
+  container.innerHTML = '';
+  preset.services.forEach((name, i) => {
+    container.insertAdjacentHTML('beforeend', cpServiceHTML(i));
+    container.querySelectorAll('.faq-pair')[i].querySelector('.cp-svc-name').value = name;
+  });
+
+  updatePreview();
+}
+
+// ── City Page service reorder ──────────────────────────────────────────────────
+function moveCPService(index, direction) {
+  const container = document.getElementById('cp-services');
+  const items = container.querySelectorAll('.faq-pair');
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= items.length) return;
+
+  const data = Array.from(items).map(item => ({
+    name: item.querySelector('.cp-svc-name').value,
+    desc: item.querySelector('.cp-svc-desc').value
+  }));
+
+  [data[index], data[targetIndex]] = [data[targetIndex], data[index]];
+
+  container.innerHTML = '';
+  data.forEach((svc, i) => {
+    container.insertAdjacentHTML('beforeend', cpServiceHTML(i));
+    const row = container.querySelectorAll('.faq-pair')[i];
+    row.querySelector('.cp-svc-name').value = svc.name;
+    row.querySelector('.cp-svc-desc').value = svc.desc;
+  });
+
+  updatePreview();
+}
+
+// ── City Page department add + remove ─────────────────────────────────────────
+function addCPDept() {
+  const container = document.getElementById('cp-departments');
+  const index = container.querySelectorAll('.location-block').length;
+  container.insertAdjacentHTML('beforeend', cpDeptHTML(index));
+}
+
+function removeCPDept(index) {
+  const container = document.getElementById('cp-departments');
+  const items = container.querySelectorAll('.location-block');
+  if (items.length <= 1) return;
+  items[index].remove();
+  container.querySelectorAll('.location-block').forEach((item, i) => {
+    item.dataset.index = i;
+    item.querySelector('.block-title').textContent = `Location ${i + 1}`;
+    item.querySelector('.remove-btn').setAttribute('onclick', `removeCPDept(${i})`);
+  });
+  updatePreview();
+}
+
+// ── Read location data ────────────────────────────────────────────────────────
+function getLBLocations() {
+  const container = document.getElementById('lb-locations');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.location-block')).map(b => ({
+    name:     b.querySelector('.lb-loc-name')?.value.trim()     || '',
+    street:   b.querySelector('.lb-loc-street')?.value.trim()   || '',
+    city:     b.querySelector('.lb-loc-city')?.value.trim()     || '',
+    state:    b.querySelector('.lb-loc-state')?.value.trim()    || '',
+    zip:      b.querySelector('.lb-loc-zip')?.value.trim()      || '',
+    country:  b.querySelector('.lb-loc-country')?.value.trim()  || 'US',
+    phone:    b.querySelector('.lb-loc-phone')?.value.trim()    || '',
+    url:      b.querySelector('.lb-loc-url')?.value.trim()      || '',
+    mapUrl:   b.querySelector('.lb-loc-map')?.value.trim()      || '',
+    lat:      b.querySelector('.lb-loc-lat')?.value.trim()      || '',
+    lng:      b.querySelector('.lb-loc-lng')?.value.trim()      || '',
+    radius:   b.querySelector('.lb-loc-radius')?.value.trim()   || '',
+    wiki:     b.querySelector('.lb-loc-wiki')?.value.trim()     || '',
+    wikidata: b.querySelector('.lb-loc-wikidata')?.value.trim() || '',
+    geonames: b.querySelector('.lb-loc-geonames')?.value.trim() || '',
+  }));
+}
+
+function getSvcLocations(prefix) {
+  const container = document.getElementById(`${prefix}-locations`);
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.location-block')).map(b => ({
+    street:  b.querySelector(`.${prefix}-loc-street`)?.value.trim()  || '',
+    city:    b.querySelector(`.${prefix}-loc-city`)?.value.trim()    || '',
+    state:   b.querySelector(`.${prefix}-loc-state`)?.value.trim()   || '',
+    zip:     b.querySelector(`.${prefix}-loc-zip`)?.value.trim()     || '',
+    country: b.querySelector(`.${prefix}-loc-country`)?.value.trim() || 'US',
+    phone:   b.querySelector(`.${prefix}-loc-phone`)?.value.trim()   || '',
+  }));
+}
+
+function buildSvcAddressArray(locations) {
+  return locations.map(loc => {
+    const addr = { "@type": "PostalAddress" };
+    if (loc.street)  addr.streetAddress   = loc.street;
+    if (loc.city)    addr.addressLocality  = loc.city;
+    if (loc.state)   addr.addressRegion    = loc.state;
+    if (loc.zip)     addr.postalCode       = loc.zip;
+    if (loc.country) addr.addressCountry   = loc.country;
+    if (loc.phone)   addr.telephone        = loc.phone;
+    return addr;
+  }).filter(a => Object.keys(a).length > 1);
+}
+
+// ── Build LocalBusiness schema object ─────────────────────────────────────────
+function buildLBSchema(opts) {
+  // opts: { name, url, mainPage, id, tel, mapUrl, image, desc, disambig, price,
+  //         payment, currency, altNames, addType, identifier, lang, services,
+  //         socialUrls, agent, founder, knowsAbout, foundCity, foundState,
+  //         days, opens, closes, locations, mode }
+  const {
+    name, url, mainPage, schemaId, tel, mapUrl, image, desc, disambig, price,
+    payment, currency, altNames, addType, identifier, lang,
+    services, socialUrls, agent, founder, knowsAbout,
+    foundCity, foundState, days, opens, closes, locations
+  } = opts;
+
+  const schema = { "@context": "https://schema.org", "@type": "LocalBusiness" };
+
+  if (schemaId) schema["@id"] = schemaId;
+  if (name)     schema.name   = name;
+  if (addType)  schema.additionalType = [addType];
+  if (identifier) schema.identifier  = [identifier];
+  if (altNames.length) schema.alternateName = altNames;
+  if (url)      { schema.url = url; schema.mainEntityOfPage = mainPage || url; }
+  if (image)    schema.image = [image];
+  schema.priceRange = price;
+  if (payment.length) schema.paymentAccepted = payment;
+  schema.currenciesAccepted = currency;
+  if (desc)     schema.description = desc;
+  if (disambig) schema.disambiguatingDescription = disambig;
+  if (mapUrl)   schema.hasMap      = mapUrl;
+  if (tel)      schema.telephone   = tel;
+
+  // Address — no telephone in LB address objects
+  const addresses = locations.map(loc => {
+    const a = { "@type": "PostalAddress" };
+    if (loc.street)  a.streetAddress   = loc.street;
+    if (loc.city)    a.addressLocality  = loc.city;
+    if (loc.state)   a.addressRegion    = loc.state;
+    if (loc.zip)     a.postalCode       = loc.zip;
+    if (loc.country) a.addressCountry   = loc.country;
+    return a;
+  }).filter(a => Object.keys(a).length > 1);
+
+  if (addresses.length === 1)    schema.address = addresses[0];
+  else if (addresses.length > 1) schema.address = addresses;
+
+  // Founder
+  if (founder) {
+    schema.founder = { "@type": "Person", name: founder };
+    if (knowsAbout.length) schema.founder.knowsAbout = knowsAbout;
+    if (foundCity || foundState) {
+      schema.founder.workLocation = {
+        "@type": "Place",
+        address: {
+          "@type": "PostalAddress",
+          ...(foundCity  && { addressLocality: foundCity }),
+          ...(foundState && { addressRegion:   foundState })
+        }
+      };
+    }
+  }
+
+  schema.knowsLanguage = lang || 'en';
+
+  if (foundCity || foundState) {
+    schema.foundingLocation = {
+      "@type": "Place",
+      address: {
+        "@type": "PostalAddress",
+        ...(foundCity  && { addressLocality: foundCity }),
+        ...(foundState && { addressRegion:   foundState })
+      }
+    };
+  }
+
+  // Hours
+  if (days.length) {
+    schema.openingHoursSpecification = {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: days,
+      opens,
+      closes
+    };
+  }
+
+  // areaServed — GeoCircle per location
+  const geoCircles = locations.filter(l => l.lat && l.lng).map(loc => ({
+    "@type": "GeoCircle",
+    geoMidpoint: {
+      "@type": "GeoCoordinates",
+      latitude:  loc.lat,
+      longitude: loc.lng
+    },
+    ...(loc.radius && { geoRadius: loc.radius })
+  }));
+  if (geoCircles.length === 1)    schema.areaServed = geoCircles[0];
+  else if (geoCircles.length > 1) schema.areaServed = geoCircles;
+
+  // contactPoint — one per location
+  const contactPoints = locations.filter(l => l.phone || l.name).map(loc => ({
+    "@type": "ContactPoint",
+    ...(loc.name  && { name: loc.name }),
+    availableLanguage: lang || 'en',
+    ...(loc.phone && { telephone: loc.phone }),
+    ...(loc.city && loc.state && { areaServed: [`${loc.city}, ${loc.state}`] }),
+    contactType: ["Customer Support"]
+  }));
+  if (contactPoints.length === 1)    schema.contactPoint = contactPoints[0];
+  else if (contactPoints.length > 1) schema.contactPoint = contactPoints;
+
+  // potentialAction
+  if (services.length || socialUrls.length || agent || name) {
+    const action = { "@type": "InteractAction" };
+    if (services.length) action.result = { "@type": "OfferCatalog", name: services };
+    if (agent)           action.agent  = { "@type": "Person", name: agent };
+
+    const participant = {};
+    if (name)              participant.name   = name;
+    if (url)               participant.url    = url;
+    if (socialUrls.length) participant.sameAs = socialUrls;
+    if (Object.keys(participant).length) {
+      action.participant = { "@type": "Organization", ...participant };
+    }
+
+    const actionLocations = locations.filter(l => l.city && l.state).map(loc => {
+      const geoLinks = [];
+      if (loc.wiki)     geoLinks.push(loc.wiki);
+      if (loc.wikidata) geoLinks.push(loc.wikidata);
+      if (loc.geonames) geoLinks.push(loc.geonames);
+      geoLinks.push(`https://www.google.com/search?q=${encodeURIComponent(loc.city + '%2C+' + loc.state)}`);
+      return {
+        "@type": "Place",
+        address: { "@type": "PostalAddress", addressLocality: loc.city, addressRegion: loc.state },
+        sameAs: geoLinks
+      };
+    });
+    if (actionLocations.length === 1)    action.location = actionLocations[0];
+    else if (actionLocations.length > 1) action.location = actionLocations;
+
+    schema.potentialAction = action;
+  }
+
+  return schema;
+}
+
+// ── Schema generators ─────────────────────────────────────────────────────────
+const generators = {
+
+  'local-business': () => {
+    const v = id => document.getElementById(id)?.value.trim() || '';
+    const name       = v('lb-name');
+    const homepageUrl = v('lb-url');
+    const desc       = v('lb-desc');
+    const disambig   = v('lb-disambig');
+    const tel        = v('lb-tel');
+    const price      = document.getElementById('lb-price')?.value || '$$$$';
+    const currency   = v('lb-currency') || 'USD';
+    const mapUrl     = v('lb-map');
+    const image      = v('lb-image');
+    const altNamesRaw = v('lb-altnames');
+    const addType    = v('lb-addtype');
+    const identifierSel = document.getElementById('lb-identifier')?.value || '';
+    const identifier = identifierSel === '__custom__' ? v('lb-identifier-custom') : identifierSel;
+    const lang       = v('lb-lang') || 'en';
+    const servicesRaw = v('lb-services');
+    const socialRaw  = v('lb-social');
+    const agent      = v('lb-agent');
+    const founder    = v('lb-founder');
+    const foundCity  = v('lb-founding-city');
+    const foundState = v('lb-founding-state');
+    const opens      = document.getElementById('lb-opens')?.value  || '00:00';
+    const closes     = document.getElementById('lb-closes')?.value || '23:59';
+
+    const payment    = Array.from(document.querySelectorAll('.lb-payment:checked')).map(c => c.value);
+    const days       = Array.from(document.querySelectorAll('.lb-day:checked')).map(c => c.value);
+    const altNames   = altNamesRaw ? altNamesRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
+    const services   = servicesRaw ? servicesRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
+    const socialUrls = socialRaw   ? socialRaw.split('\n').map(s => s.trim()).filter(Boolean)   : [];
+    const knowsAbout = Array.from(document.querySelectorAll('.lb-ka:checked')).map(c => c.value);
+    const locations  = getLBLocations();
+
+    const shared = {
+      desc, disambig, price, payment, currency, altNames, addType, identifier, lang,
+      services, socialUrls, agent, founder, knowsAbout, foundCity, foundState,
+      days, opens, closes, image
+    };
+
+    if (lbMode === 'homepage') {
+      // Single schema — all locations combined
+      const schemaId = homepageUrl ? homepageUrl.replace(/\/$/, '') + '/#business' : '';
+      const schema = buildLBSchema({
+        ...shared,
+        name, url: homepageUrl, mainPage: homepageUrl, schemaId,
+        tel, mapUrl, locations
+      });
+      return JSON.stringify(schema, null, 2);
+
+    } else {
+      // One schema block per location
+      const blocks = locations.map((loc, i) => {
+        const locUrl   = loc.url || homepageUrl;
+        const schemaId = locUrl ? locUrl.replace(/\/$/, '') + '#business' : '';
+        const locName  = loc.name || name;
+        const locTel   = loc.phone || tel;
+        const locMap   = loc.mapUrl || mapUrl;
+
+        const schema = buildLBSchema({
+          ...shared,
+          name: locName,
+          url: locUrl,
+          mainPage: locUrl,
+          schemaId,
+          tel: locTel,
+          mapUrl: locMap,
+          locations: [loc]
+        });
+
+        // For per-location: participant uses branch name/url
+        if (schema.potentialAction?.participant) {
+          schema.potentialAction.participant.name = locName;
+          schema.potentialAction.participant.url  = locUrl;
+        }
+
+        const label = loc.name ? `// ─── ${loc.name} ───` : `// ─── Location ${i + 1} ───`;
+        return `${label}\n<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n<\/script>`;
+      });
+
+      return blocks.join('\n\n');
+    }
+  },
+
+  'service': () => {
+    const v = id => document.getElementById(id)?.value.trim() || '';
+    const locations = getSvcLocations('svc');
+    const addresses = buildSvcAddressArray(locations);
+
+    const schema = { "@context": "https://schema.org", "@type": "Service" };
+    const name = v('svc-name'), image = v('svc-image'), desc = v('svc-desc');
+    const pageUrl = v('svc-url'), currency = v('svc-currency') || 'USD', price = v('svc-price') || '$$';
+    const bizName = v('svc-biz-name'), bizUrl = v('svc-biz-url');
+    const priceRange = document.getElementById('svc-price-range')?.value || '$$';
+    const logo = v('svc-logo');
+
+    if (name)  schema.name        = name;
+    if (image) schema.image       = image;
+    if (desc)  schema.description = desc;
+    schema.offers = {
+      "@type": "Offer",
+      ...(pageUrl && { url: pageUrl }),
+      priceCurrency: currency,
+      price
+    };
+    const provider = { "@type": "LocalBusiness" };
+    if (bizName) provider.name       = bizName;
+    if (bizUrl)  provider.url        = bizUrl;
+    provider.priceRange = priceRange;
+    if (logo)    provider.logo       = logo;
+    if (addresses.length === 1)    provider.address = addresses[0];
+    else if (addresses.length > 1) provider.address = addresses;
+    schema.provider = provider;
+    return JSON.stringify(schema, null, 2);
+  },
+
+  'product': () => {
+    const v = id => document.getElementById(id)?.value.trim() || '';
+    const locations = getSvcLocations('prod');
+    const addresses = buildSvcAddressArray(locations);
+
+    const schema = { "@context": "http://schema.org", "@type": "Product" };
+    const name = v('prod-name'), image = v('prod-image'), desc = v('prod-desc');
+    const pageUrl = v('prod-url'), rating = v('prod-rating') || '5', ratingCount = v('prod-rating-count') || '5';
+    const bizName = v('prod-biz-name'), bizUrl = v('prod-biz-url');
+    const priceRange = document.getElementById('prod-price-range')?.value || '$$';
+    const logo = v('prod-logo');
+
+    if (name)    schema.name        = name;
+    if (image)   schema.image       = image;
+    if (desc)    schema.description = desc;
+    if (pageUrl) schema.url         = pageUrl;
+    schema.aggregateRating = { "@type": "AggregateRating", ratingValue: rating, ratingCount };
+    const brand = { "@type": "LocalBusiness" };
+    if (bizName) brand.name       = bizName;
+    if (bizUrl)  brand.url        = bizUrl;
+    brand.priceRange = priceRange;
+    if (logo)    brand.logo       = logo;
+    if (addresses.length === 1)    brand.address = addresses[0];
+    else if (addresses.length > 1) brand.address = addresses;
+    schema.brand = brand;
+    return JSON.stringify(schema, null, 2);
+  },
+
+  'faq': () => {
+    const pairs = Array.from(document.querySelectorAll('.faq-pair'))
+      .map(p => ({ q: p.querySelector('.faq-q')?.value.trim() || '', a: p.querySelector('.faq-a')?.value.trim() || '' }))
+      .filter(p => p.q || p.a);
+    const schema = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: pairs.map(p => ({
+        "@type": "Question",
+        name: p.q,
+        acceptedAnswer: { "@type": "Answer", text: p.a }
+      }))
+    };
+    return JSON.stringify(schema, null, 2);
+  },
+
+  'article': () => {
+    const v = id => document.getElementById(id)?.value.trim() || '';
+    const headline = v('art-headline'), desc = v('art-desc'), url = v('art-url');
+    const image = v('art-image'), published = v('art-published'), modified = v('art-modified');
+    const author = v('art-author'), authorType = document.getElementById('art-author-type')?.value || 'Person';
+    const pubName = v('art-pub-name'), pubLogo = v('art-pub-logo');
+
+    const schema = { "@context": "https://schema.org", "@type": "Article" };
+    if (headline)  schema.headline      = headline;
+    if (desc)      schema.description   = desc;
+    if (url)       schema.url           = url;
+    if (image)     schema.image         = image;
+    if (published) schema.datePublished = published;
+    if (modified)  schema.dateModified  = modified;
+    if (author)    schema.author        = { "@type": authorType, name: author };
+    if (pubName || pubLogo) {
+      schema.publisher = {
+        "@type": "Organization",
+        ...(pubName && { name: pubName }),
+        ...(pubLogo && { logo: { "@type": "ImageObject", url: pubLogo } })
+      };
+    }
+    return JSON.stringify(schema, null, 2);
+  },
+
+  'city-page': () => {
+    const v = id => document.getElementById(id)?.value.trim() || '';
+    const pageUrl        = v('cp-page-url');
+    const schemaIdSuffix = v('cp-schema-id');
+    const name           = v('cp-name');
+    const homepageUrl    = v('cp-url');
+    const tel            = v('cp-tel');
+    const image          = v('cp-image');
+    const addType        = v('cp-addtype');
+    const street         = v('cp-street');
+    const city           = v('cp-city');
+    const state          = v('cp-state');
+    const zip            = v('cp-zip');
+    const country        = v('cp-country') || 'US';
+    const targetCity     = v('cp-target-city');
+    const targetState    = v('cp-target-state');
+    const catalogInput   = v('cp-catalog-name');
+
+    const lbId     = homepageUrl ? homepageUrl.replace(/\/$/, '') + '/#' + schemaIdSuffix : '';
+    const faqId    = pageUrl     ? pageUrl.replace(/\/$/, '')     + '/#faq'               : '';
+    const areaName = [targetCity, targetState].filter(Boolean).join(', ');
+    const catalogName = catalogInput || (name && areaName ? `Our ${name} Services in ${areaName}` : '');
+
+    const services = Array.from(document.querySelectorAll('#cp-services .faq-pair'))
+      .map(s => ({ name: s.querySelector('.cp-svc-name')?.value.trim() || '', desc: s.querySelector('.cp-svc-desc')?.value.trim() || '' }))
+      .filter(s => s.name || s.desc);
+
+    const faqs = Array.from(document.querySelectorAll('#cp-faq-pairs .faq-pair'))
+      .map(p => ({ q: p.querySelector('.cp-faq-q')?.value.trim() || '', a: p.querySelector('.cp-faq-a')?.value.trim() || '' }))
+      .filter(p => p.q || p.a);
+
+    // Build LocalBusiness — property order matches target output
+    const lb = { "@type": "LocalBusiness" };
+    if (lbId)        lb["@id"]         = lbId;
+    if (name)        lb.name            = name;
+    if (homepageUrl) lb.url             = homepageUrl;
+
+    // Single mode: telephone at top level; multi mode: telephone lives in each department
+    if (cpMode === 'single' && tel) lb.telephone = tel;
+
+    if (image)   lb.image          = image;
+    if (addType) lb.additionalType = addType;
+
+    if (cpMode === 'single') {
+      const addr = { "@type": "PostalAddress" };
+      if (street)  addr.streetAddress   = street;
+      if (city)    addr.addressLocality  = city;
+      if (state)   addr.addressRegion    = state;
+      if (zip)     addr.postalCode       = zip;
+      if (country) addr.addressCountry   = country;
+      if (Object.keys(addr).length > 1) lb.address = addr;
+    } else {
+      const depts = Array.from(document.querySelectorAll('#cp-departments .location-block')).map(d => {
+        const label    = d.querySelector('.cp-dept-label')?.value.trim()   || '';
+        const slug     = d.querySelector('.cp-dept-slug')?.value.trim()    || '';
+        const dPhone   = d.querySelector('.cp-dept-phone')?.value.trim()   || '';
+        const dStreet  = d.querySelector('.cp-dept-street')?.value.trim()  || '';
+        const dCity    = d.querySelector('.cp-dept-city')?.value.trim()    || '';
+        const dState   = d.querySelector('.cp-dept-state')?.value.trim()   || '';
+        const dZip     = d.querySelector('.cp-dept-zip')?.value.trim()     || '';
+        const dCountry = d.querySelector('.cp-dept-country')?.value.trim() || 'US';
+
+        const dept = { "@type": "LocalBusiness" };
+        if (slug)   dept["@id"]    = homepageUrl ? homepageUrl.replace(/\/$/, '') + '/#' + slug + '-location' : '';
+        if (label)  dept.name      = name ? `${name} - ${label}` : label;
+        if (dPhone) dept.telephone = dPhone;
+
+        const dAddr = { "@type": "PostalAddress" };
+        if (dStreet)  dAddr.streetAddress   = dStreet;
+        if (dCity)    dAddr.addressLocality  = dCity;
+        if (dState)   dAddr.addressRegion    = dState;
+        if (dZip)     dAddr.postalCode       = dZip;
+        if (dCountry) dAddr.addressCountry   = dCountry;
+        if (Object.keys(dAddr).length > 1) dept.address = dAddr;
+
+        return dept;
+      }).filter(d => d.name || d["@id"]);
+
+      if (depts.length) lb.department = depts;
+    }
+
+    if (areaName) lb.areaServed = { "@type": "City", name: areaName };
+
+    if (services.length) {
+      lb.hasOfferCatalog = {
+        "@type": "OfferCatalog",
+        name: catalogName,
+        itemListElement: services.map(s => ({
+          "@type": "Offer",
+          itemOffered: Object.assign(
+            { "@type": "Service", name: s.name, serviceType: s.name },
+            s.desc ? { description: s.desc } : {}
+          )
+        }))
+      };
+    }
+
+    // Build FAQPage
+    const faqPage = { "@type": "FAQPage" };
+    if (faqId) faqPage["@id"] = faqId;
+    if (faqs.length) {
+      faqPage.mainEntity = faqs.map(p => ({
+        "@type": "Question",
+        name: p.q,
+        acceptedAnswer: { "@type": "Answer", text: p.a }
+      }));
+    }
+
+    return JSON.stringify({ "@context": "https://schema.org", "@graph": [lb, faqPage] }, null, 2);
+  }
+};
+
+// ── City Page industry presets ────────────────────────────────────────────────
+const cpIndustryPresets = {
+  'funeral': {
+    label: 'Funeral Homes & Cremation',
+    additionalType: 'https://en.wikipedia.org/wiki/Funeral_home',
+    schemaId: 'funeralhome',
+    services: ['Burial Services','Cremation Services','Funeral Planning','Pre-Planning Services','Memorial Services','Grief Support & Aftercare','Veteran Funeral Honors']
+  },
+  'assisted-living': {
+    label: 'Assisted Living Facilities',
+    additionalType: 'https://en.wikipedia.org/wiki/Assisted_living',
+    schemaId: 'assistedliving',
+    services: ['Personal Care Services','Medication Management','Dining Services','Social and Recreational Activities','Housekeeping and Maintenance','Memory Care','Respite Care']
+  },
+  'home-health': {
+    label: 'Home Health',
+    additionalType: 'https://en.wikipedia.org/wiki/Home_health_care',
+    schemaId: 'homehealthcare',
+    services: ['Skilled Nursing Care','Physical Therapy','Occupational Therapy','Speech-Language Pathology','Home Health Aide Services','Medical Social Work']
+  },
+  'windows-doors': {
+    label: 'Windows & Doors',
+    additionalType: 'https://en.wikipedia.org/wiki/Window',
+    schemaId: 'windowsdoors',
+    services: ['Replacement Windows','Replacement Doors','Energy-Efficient Windows','Entry Doors','Patio Doors','Storm Windows','Window and Door Installation']
+  },
+  'window-covering': {
+    label: 'Window Covering',
+    additionalType: 'https://en.wikipedia.org/wiki/Window_covering',
+    schemaId: 'windowcovering',
+    services: ['Custom Blinds','Custom Shades','Custom Shutters','Draperies and Curtains','Motorization','In-Home Consultation','Professional Installation']
+  },
+  'cemetery': {
+    label: 'Cemeteries',
+    additionalType: 'https://en.wikipedia.org/wiki/Cemetery',
+    schemaId: 'cemetery',
+    services: ['Burial Plots','Mausoleum Crypts','Cremation Niches','Ground Burial Services','Pre-Planning Services','Veteran Memorial Services','Memorial Markers and Monuments','Grave Maintenance']
+  }
+};
+
+// ── Update preview ────────────────────────────────────────────────────────────
+function updatePreview() {
+  try {
+    const json = generators[currentType]();
+
+    let output;
+    if (currentType === 'local-business' && lbMode === 'per-location') {
+      // Already includes <script> tags per block
+      output = json;
+      document.getElementById('preview-label').textContent = 'JSON-LD Output — Per-Location Schemas';
+    } else {
+      output = `<script type="application/ld+json">\n${json}\n<\/script>`;
+      document.getElementById('preview-label').textContent = 'JSON-LD Output';
+    }
+
+    document.getElementById('output').textContent = output;
+  } catch (e) {
+    document.getElementById('output').textContent = '// Error: ' + e.message;
+  }
+}
+
+// ── Copy button ───────────────────────────────────────────────────────────────
+document.getElementById('copy-btn').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('output').textContent).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+});
+
+// ── Identifier auto-suggest ───────────────────────────────────────────────────
+const identifierSuggestions = {
+  'http://www.productontology.org/id/Funeral_home':  ['http://www.productontology.org/doc/Funeral', 'http://www.productontology.org/doc/Cremation', 'http://www.productontology.org/doc/Burial'],
+  'http://www.productontology.org/id/Cremation':     ['http://www.productontology.org/doc/Cremation', 'http://www.productontology.org/doc/Burial'],
+  'http://www.productontology.org/id/Cemetery':      ['http://www.productontology.org/doc/Cemetery', 'http://www.productontology.org/doc/Burial'],
+  'http://www.productontology.org/id/Mortuary':      ['http://www.productontology.org/doc/Funeral', 'http://www.productontology.org/doc/Cremation', 'http://www.productontology.org/doc/Embalming'],
+  'http://www.productontology.org/id/Home_care':     ['http://www.productontology.org/doc/Home_care'],
+  'http://www.productontology.org/id/Assisted_living': ['http://www.productontology.org/doc/Assisted_living', 'http://www.productontology.org/doc/Home_care'],
+  'http://www.productontology.org/id/Nursing_home_care': ['http://www.productontology.org/doc/Nursing_home_care', 'http://www.productontology.org/doc/Home_care'],
+  'http://www.productontology.org/id/Hospice':       ['http://www.productontology.org/doc/Hospice', 'http://www.productontology.org/doc/Home_care'],
+  'http://www.productontology.org/id/Window':        ['http://www.productontology.org/doc/Window', 'http://www.productontology.org/doc/Door'],
+  'http://www.productontology.org/id/Door':          ['http://www.productontology.org/doc/Door', 'http://www.productontology.org/doc/Window'],
+  'http://www.productontology.org/id/Roof':          ['http://www.productontology.org/doc/Roof'],
+  'http://www.productontology.org/id/Siding':        ['http://www.productontology.org/doc/Siding', 'http://www.productontology.org/doc/Roof'],
+  'http://www.productontology.org/id/HVAC':          ['http://www.productontology.org/doc/HVAC', 'http://www.productontology.org/doc/Air_conditioning', 'http://www.productontology.org/doc/Heating'],
+  'http://www.productontology.org/id/Plumbing':      ['http://www.productontology.org/doc/Plumbing'],
+  'http://www.productontology.org/id/Air_conditioning': ['http://www.productontology.org/doc/Air_conditioning', 'http://www.productontology.org/doc/HVAC'],
+  'http://www.productontology.org/id/Heating':       ['http://www.productontology.org/doc/Heating', 'http://www.productontology.org/doc/HVAC'],
+  'http://www.productontology.org/id/General_contractor': ['http://www.productontology.org/doc/General_contractor'],
+  'http://www.productontology.org/id/Landscaping':   ['http://www.productontology.org/doc/Landscaping'],
+  'http://www.productontology.org/id/Flooring':      ['http://www.productontology.org/doc/Flooring'],
+  'http://www.productontology.org/id/Painting':      ['http://www.productontology.org/doc/Painting'],
+  'http://www.productontology.org/id/Veterinarian':  ['http://www.productontology.org/doc/Veterinary_medicine'],
+  'http://www.productontology.org/id/Animal_grooming': ['http://www.productontology.org/doc/Animal_grooming'],
+  'http://www.productontology.org/id/Pet_cemetery':  ['http://www.productontology.org/doc/Cremation', 'http://www.productontology.org/doc/Cemetery'],
+};
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'lb-identifier') {
+    const val = e.target.value;
+    // Show/hide custom input
+    const wrap = document.getElementById('lb-identifier-custom-wrap');
+    if (wrap) wrap.style.display = val === '__custom__' ? '' : 'none';
+    // Auto-check knowsAbout suggestions
+    const suggestions = identifierSuggestions[val] || [];
+    document.querySelectorAll('.lb-ka').forEach(cb => {
+      cb.checked = suggestions.includes(cb.value);
+    });
+    updatePreview();
+  }
+});
+
+// ── FAQ link builder ──────────────────────────────────────────────────────────
+function insertFAQLink(btn) {
+  const pair   = btn.closest('.faq-pair');
+  const ta     = pair.querySelector('textarea');
+  const anchor = pair.querySelector('.link-anchor').value.trim();
+  const url    = pair.querySelector('.link-url').value.trim();
+
+  if (!anchor || !url) return;
+
+  const linked = `<a href='${url}'>${anchor}</a>`;
+
+  if (ta.value.includes(anchor)) {
+    ta.value = ta.value.replace(anchor, linked);
+  } else {
+    ta.value = ta.value ? ta.value + ' ' + linked : linked;
+  }
+
+  pair.querySelector('.link-anchor').value = '';
+  pair.querySelector('.link-url').value    = '';
+  updatePreview();
+}
+
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderForm(currentType);
+updatePreview();
+</script>
+</body>
+</html>
