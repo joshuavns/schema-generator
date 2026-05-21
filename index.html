@@ -642,12 +642,19 @@ const forms = {
       <button class="add-btn" id="svc-add-location">+ Add Location</button>
     </div>
     <div class="section">
-      <div class="section-title">Sub-Services / Offer Catalog</div>
-      <div class="info-note" style="margin-bottom:12px;">Adds a <code>hasOfferCatalog</code> to the provider with individual sub-service entries. Leave empty to omit.</div>
-      <div class="field"><label>Catalog Name</label>
-        <input type="text" id="svc-catalog-name" placeholder="e.g. Services"></div>
+      <div class="section-title">Offer Catalog</div>
+      <div class="info-note" style="margin-bottom:12px;">Adds a <code>hasOfferCatalog</code> to the provider. Leave empty to omit.</div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Catalog Name</label>
+          <input type="text" id="svc-catalog-name" placeholder="e.g. Services"></div>
+        <div class="field"><label>Item Type</label>
+          <select id="svc-catalog-item-type">
+            <option value="Service">Service</option>
+            <option value="Product">Product</option>
+          </select></div>
+      </div>
       <div id="svc-subservices-list"></div>
-      <button class="add-btn" id="svc-add-subservice">+ Add Sub-Service</button>
+      <button class="add-btn" id="svc-add-subservice">+ Add Item</button>
     </div>
   `,
 
@@ -1779,6 +1786,7 @@ const generators = {
 
     // hasOfferCatalog
     const catalogName = v('svc-catalog-name');
+    const catalogItemType = document.getElementById('svc-catalog-item-type')?.value || 'Service';
     const subRows = document.querySelectorAll('.svc-sub-row');
     if (subRows.length > 0) {
       const items = [];
@@ -1787,7 +1795,7 @@ const generators = {
         const subDesc = row.querySelector('.svc-sub-desc')?.value.trim() || '';
         const subImg  = row.querySelector('.svc-sub-image')?.value.trim() || '';
         if (subName) {
-          const offered = { "@type": "Service", name: subName };
+          const offered = { "@type": catalogItemType, name: subName };
           if (subDesc) offered.description = subDesc;
           offered.image = subImg;
           items.push({ "@type": "Offer", itemOffered: offered });
