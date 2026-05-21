@@ -643,14 +643,19 @@ const forms = {
     </div>
     <div class="section">
       <div class="section-title">Offer Catalog</div>
-      <div class="info-note" style="margin-bottom:12px;">Adds a <code>hasOfferCatalog</code> to the provider. Leave empty to omit.</div>
-      <div class="field-row cols-2">
+      <div class="info-note" style="margin-bottom:12px;">Adds a <code>hasOfferCatalog</code> to either the Service or the Provider. Leave empty to omit.</div>
+      <div class="field-row cols-3">
         <div class="field"><label>Catalog Name</label>
-          <input type="text" id="svc-catalog-name" placeholder="e.g. Services"></div>
+          <input type="text" id="svc-catalog-name" placeholder="e.g. Windows We Carry"></div>
         <div class="field"><label>Item Type</label>
           <select id="svc-catalog-item-type">
             <option value="Service">Service</option>
             <option value="Product">Product</option>
+          </select></div>
+        <div class="field"><label>Attach To</label>
+          <select id="svc-catalog-attach">
+            <option value="service">Service <span style="font-size:11px;">(this page)</span></option>
+            <option value="provider">Provider <span style="font-size:11px;">(business)</span></option>
           </select></div>
       </div>
       <div id="svc-subservices-list"></div>
@@ -1785,8 +1790,9 @@ const generators = {
     if (telephone)  provider.telephone  = telephone;
 
     // hasOfferCatalog
-    const catalogName = v('svc-catalog-name');
+    const catalogName     = v('svc-catalog-name');
     const catalogItemType = document.getElementById('svc-catalog-item-type')?.value || 'Service';
+    const catalogAttach   = document.getElementById('svc-catalog-attach')?.value || 'service';
     const subRows = document.querySelectorAll('.svc-sub-row');
     if (subRows.length > 0) {
       const items = [];
@@ -1802,11 +1808,16 @@ const generators = {
         }
       });
       if (items.length > 0) {
-        provider.hasOfferCatalog = {
+        const catalog = {
           "@type": "OfferCatalog",
           name: catalogName || "Services",
           itemListElement: items
         };
+        if (catalogAttach === 'provider') {
+          provider.hasOfferCatalog = catalog;
+        } else {
+          schema.hasOfferCatalog = catalog;
+        }
       }
     }
 
