@@ -336,6 +336,7 @@
     <button class="tab" data-type="faq">FAQ</button>
     <button class="tab" data-type="article">Article</button>
     <button class="tab" data-type="city-page">City Page</button>
+    <button class="tab" data-type="organization">Organization</button>
   </div>
 
   <div class="main">
@@ -811,6 +812,174 @@ const forms = {
       <div class="field"><label>Publisher Logo URL</label>
         <input type="url" id="art-pub-logo" placeholder="https://..."></div>
     </div>
+  `,
+
+  'organization': () => `
+    <div class="section">
+      <div class="section-title">Organization Info</div>
+      <div class="field"><label>Organization Name <span class="req">*</span></label>
+        <input type="text" id="org-name" placeholder="e.g. Vantage Point Preneed"></div>
+      <div class="field"><label>Website URL <span class="req">*</span></label>
+        <input type="url" id="org-url" placeholder="https://www.example.com/"></div>
+      <div class="field"><label>Alternate Names <span class="hint">(comma-separated — service types or common name variants)</span></label>
+        <input type="text" id="org-altnames" placeholder="e.g. Preneed Insurance, Pre-Arranged Funerals, Funeral Pre-Planning"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Business Types</div>
+      <div class="field">
+        <label>Load Identifiers by Vertical <span class="hint">(pre-fills productontology URLs below)</span></label>
+        <select id="org-industry">
+          <option value="">— Select a vertical —</option>
+          <option value="funeral">Deathcare — Funeral Homes &amp; Cremation</option>
+          <option value="cemetery">Cemetery</option>
+          <option value="assisted-living">Assisted Living</option>
+          <option value="home-health">Home Health / Home Care</option>
+          <option value="windows-doors">Windows &amp; Doors</option>
+          <option value="window-covering">Window Covering</option>
+          <option value="hvac">HVAC &amp; Heating / Cooling</option>
+          <option value="roofing-siding">Roofing &amp; Siding</option>
+          <option value="general-contractor">General Contractor / Home Services</option>
+          <option value="preneed">Preneed / Funeral Pre-Planning</option>
+          <option value="b2b">B2B / Professional Services</option>
+          <option value="b2b-preneed">B2B — Preneed Marketing (VPP-style)</option>
+        </select>
+      </div>
+      <div class="field"><label>Additional Types <span class="hint">(Wikidata URLs — e.g. https://www.wikidata.org/wiki/Q...)</span></label></div>
+      <div id="org-addtype-list"></div>
+      <button class="add-btn" id="org-add-addtype">+ Add Wikidata URL</button>
+      <div class="field" style="margin-top:16px"><label>Identifiers <span class="hint">(productontology.org — e.g. http://www.productontology.org/id/...)</span></label></div>
+      <div id="org-identifier-list"></div>
+      <button class="add-btn" id="org-add-identifier">+ Add Identifier URL</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Descriptions &amp; Logo</div>
+      <div class="field"><label>Logo URL</label>
+        <input type="url" id="org-logo" placeholder="https://www.example.com/logo.png"></div>
+      <div class="field"><label>Description</label>
+        <textarea id="org-desc" rows="3" placeholder="Founded in [year], [Business] is a trusted provider of..."></textarea></div>
+      <div class="field"><label>Disambiguating Description</label>
+        <textarea id="org-disambig" rows="3" placeholder="We offer a full range of services including..."></textarea></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Headquarters Address <span class="hint">(leave blank if no public address)</span></div>
+      <div class="field"><label>Street Address</label>
+        <input type="text" id="org-street" placeholder="e.g. 100 Main St Suite 200"></div>
+      <div class="field-row cols-3">
+        <div class="field"><label>City</label>
+          <input type="text" id="org-city" placeholder="Los Angeles"></div>
+        <div class="field"><label>State</label>
+          <input type="text" id="org-state" placeholder="CA"></div>
+        <div class="field"><label>Zip</label>
+          <input type="text" id="org-zip" placeholder="90001"></div>
+      </div>
+      <div class="field" style="max-width:120px"><label>Country</label>
+        <input type="text" id="org-country" value="US"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Founding Location <span class="hint">(leave blank if unknown)</span></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>City</label>
+          <input type="text" id="org-founding-city" placeholder="e.g. Los Angeles"></div>
+        <div class="field"><label>State</label>
+          <input type="text" id="org-founding-state" placeholder="e.g. CA"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Owner / Proprietor</div>
+      <div class="field"><label>Owner Full Name</label>
+        <input type="text" id="org-owner-name" placeholder="e.g. Jane Smith"></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Work City</label>
+          <input type="text" id="org-owner-city" placeholder="e.g. Los Angeles"></div>
+        <div class="field"><label>Work State</label>
+          <input type="text" id="org-owner-state" placeholder="e.g. CA"></div>
+      </div>
+      <div class="field" style="margin-top:8px"><label>Owner knowsAbout <span class="hint">(productontology.org)</span></label></div>
+      <div id="org-owner-ka-list"></div>
+      <button class="add-btn" id="org-add-owner-ka">+ Add knowsAbout URL</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Contact</div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Phone <span class="req">*</span></label>
+          <input type="text" id="org-phone" placeholder="(555) 123-4567"></div>
+        <div class="field"><label>Contact Point Name</label>
+          <input type="text" id="org-cp-name" placeholder="e.g. Vantage Point Preneed"></div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Contact Type</label>
+          <select id="org-contact-type">
+            <option value="customer support">Customer Support</option>
+            <option value="customer service">Customer Service</option>
+            <option value="sales">Sales</option>
+            <option value="technical support">Technical Support</option>
+            <option value="billing support">Billing Support</option>
+          </select></div>
+        <div class="field"><label>Areas Served <span class="hint">(comma-separated)</span></label>
+          <input type="text" id="org-cp-areaserved" placeholder="e.g. United States, Nationwide"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Area Served</div>
+      <div class="field"><label>Text-based <span class="hint">(e.g. United States — used when no specific radius applies)</span></label>
+        <input type="text" id="org-areaserved-text" placeholder="e.g. United States"></div>
+      <div class="field" style="margin-top:12px"><label>Or GeoCircle <span class="hint">(overrides text above if lat/lng are filled)</span></label></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Latitude</label>
+          <input type="text" id="org-lat" placeholder="e.g. 37.5551161"></div>
+        <div class="field"><label>Longitude</label>
+          <input type="text" id="org-lng" placeholder="e.g. -122.0084651"></div>
+      </div>
+      <div class="field" style="max-width:200px"><label>Radius <span class="hint">(miles)</span></label>
+        <input type="text" id="org-radius" placeholder="e.g. 10"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Services Offered <span class="hint">(Offer Catalog)</span></div>
+      <div id="org-services-list"></div>
+      <button class="add-btn" id="org-add-service">+ Add Service</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Business Hours</div>
+      <div class="field">
+        <label>Days Open</label>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+          <label style="font-weight:normal;font-size:13px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="org-day" value="Monday" checked> Mon</label>
+          <label style="font-weight:normal;font-size:13px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="org-day" value="Tuesday" checked> Tue</label>
+          <label style="font-weight:normal;font-size:13px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="org-day" value="Wednesday" checked> Wed</label>
+          <label style="font-weight:normal;font-size:13px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="org-day" value="Thursday" checked> Thu</label>
+          <label style="font-weight:normal;font-size:13px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="org-day" value="Friday" checked> Fri</label>
+          <label style="font-weight:normal;font-size:13px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="org-day" value="Saturday"> Sat</label>
+          <label style="font-weight:normal;font-size:13px;display:flex;align-items:center;gap:4px"><input type="checkbox" class="org-day" value="Sunday"> Sun</label>
+        </div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Opens</label>
+          <input type="text" id="org-opens" value="08:00" placeholder="08:00"></div>
+        <div class="field"><label>Closes</label>
+          <input type="text" id="org-closes" value="17:00" placeholder="17:00"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Business Profiles <span class="hint">(Yelp, BBB, etc.)</span></div>
+      <div id="org-profiles-list"></div>
+      <button class="add-btn" id="org-add-profile">+ Add Profile URL</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">City Reference Links <span class="hint">(Google, Wikipedia, Wikidata, GeoNames)</span></div>
+      <div id="org-cityref-list"></div>
+      <button class="add-btn" id="org-add-cityref">+ Add City Reference URL</button>
+    </div>
   `
 };
 
@@ -1052,10 +1221,35 @@ function renderForm(type) {
     addCPFAQ();
     addCPFAQ();
     if (cpMode === 'multi') { addCPDept(); addCPDept(); }
+  } else if (type === 'organization') {
+    document.getElementById('org-industry').addEventListener('change',      e  => { applyOrgPreset(e.target.value); });
+    document.getElementById('org-add-addtype').addEventListener('click',    () => { addOrgRow('org-addtype-list',    'org-addtype-url',    'https://www.wikidata.org/wiki/Q...'); updatePreview(); });
+    document.getElementById('org-add-identifier').addEventListener('click', () => { addOrgRow('org-identifier-list', 'org-identifier-url', 'http://www.productontology.org/id/...'); updatePreview(); });
+    document.getElementById('org-add-owner-ka').addEventListener('click',   () => { addOrgRow('org-owner-ka-list',  'org-owner-ka-url',   'http://www.productontology.org/id/...'); updatePreview(); });
+    document.getElementById('org-add-service').addEventListener('click',    () => { addOrgServiceRow(); updatePreview(); });
+    document.getElementById('org-add-profile').addEventListener('click',    () => { addOrgRow('org-profiles-list',  'org-profile-url',    'https://www.yelp.com/biz/...'); updatePreview(); });
+    document.getElementById('org-add-cityref').addEventListener('click',    () => { addOrgRow('org-cityref-list',   'org-cityref-url',    'https://en.wikipedia.org/wiki/...'); updatePreview(); });
   }
 
   panel.addEventListener('input', updatePreview);
   panel.addEventListener('change', updatePreview);
+}
+
+// ── Organization dynamic row helpers ─────────────────────────────────────────
+function addOrgRow(listId, inputClass, placeholder) {
+  document.getElementById(listId).insertAdjacentHTML('beforeend',
+    `<div class="org-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">` +
+    `<input type="url" class="${inputClass}" placeholder="${placeholder}" style="flex:1">` +
+    `<button class="remove-btn" onclick="this.closest('.org-row').remove();updatePreview()">Remove</button>` +
+    `</div>`);
+}
+
+function addOrgServiceRow() {
+  document.getElementById('org-services-list').insertAdjacentHTML('beforeend',
+    `<div class="org-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">` +
+    `<input type="text" class="org-service-name" placeholder="e.g. Preneed Insurance" style="flex:1">` +
+    `<button class="remove-btn" onclick="this.closest('.org-row').remove();updatePreview()">Remove</button>` +
+    `</div>`);
 }
 
 // ── Add / remove location ─────────────────────────────────────────────────────
@@ -1693,6 +1887,147 @@ const generators = {
     }
 
     return JSON.stringify({ "@context": "https://schema.org", "@graph": [lb, faqPage] }, null, 2);
+  },
+
+  'organization': () => {
+    const v = id => document.getElementById(id)?.value.trim() || '';
+
+    const name          = v('org-name');
+    const url           = v('org-url');
+    const altNamesRaw   = v('org-altnames');
+    const logo          = v('org-logo');
+    const desc          = v('org-desc');
+    const disambig      = v('org-disambig');
+    const street        = v('org-street');
+    const city          = v('org-city');
+    const state         = v('org-state');
+    const zip           = v('org-zip');
+    const country       = v('org-country') || 'US';
+    const foundingCity  = v('org-founding-city');
+    const foundingState = v('org-founding-state');
+    const ownerName     = v('org-owner-name');
+    const ownerCity     = v('org-owner-city');
+    const ownerState    = v('org-owner-state');
+    const phone         = v('org-phone');
+    const cpName        = v('org-cp-name');
+    const contactType   = document.getElementById('org-contact-type')?.value || 'customer support';
+    const cpAreaRaw     = v('org-cp-areaserved');
+    const areaServedText = v('org-areaserved-text');
+    const lat           = v('org-lat');
+    const lng           = v('org-lng');
+    const radiusMiles   = v('org-radius');
+    const opens         = v('org-opens') || '08:00';
+    const closes        = v('org-closes') || '17:00';
+
+    const alternateName = altNamesRaw ? altNamesRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const cpAreaServed  = cpAreaRaw   ? cpAreaRaw.split(',').map(s => s.trim()).filter(Boolean)   : [];
+    const addTypes      = Array.from(document.querySelectorAll('.org-addtype-url')).map(i => i.value.trim()).filter(Boolean);
+    const identifiers   = Array.from(document.querySelectorAll('.org-identifier-url')).map(i => i.value.trim()).filter(Boolean);
+    const ownerKA       = Array.from(document.querySelectorAll('.org-owner-ka-url')).map(i => i.value.trim()).filter(Boolean);
+    const services      = Array.from(document.querySelectorAll('.org-service-name')).map(i => i.value.trim()).filter(Boolean);
+    const profiles      = Array.from(document.querySelectorAll('.org-profile-url')).map(i => i.value.trim()).filter(Boolean);
+    const cityRefs      = Array.from(document.querySelectorAll('.org-cityref-url')).map(i => i.value.trim()).filter(Boolean);
+    const days          = Array.from(document.querySelectorAll('.org-day:checked')).map(cb => cb.value);
+
+    const schema = { "@context": "https://schema.org", "@type": "Organization" };
+
+    if (url)                schema["@id"]                    = url;
+    if (name)               schema.name                      = name;
+    if (addTypes.length)    schema.additionalType            = addTypes;
+    if (identifiers.length) schema.identifier                = identifiers;
+    if (alternateName.length) schema.alternateName           = alternateName;
+    if (url)                schema.url                       = url;
+    if (url)                schema.mainEntityOfPage          = url;
+    if (logo)               schema.logo                      = [logo];
+    if (desc)               schema.description               = desc;
+    if (disambig)           schema.disambiguatingDescription = disambig;
+    if (phone)              schema.telephone                 = phone;
+
+    // Address
+    const addr = { "@type": "PostalAddress" };
+    if (street)  addr.streetAddress   = street;
+    if (city)    addr.addressLocality  = city;
+    if (state)   addr.addressRegion    = state;
+    if (zip)     addr.postalCode       = zip;
+    if (country) addr.addressCountry   = country;
+    if (Object.keys(addr).length > 1) schema.address = addr;
+
+    // Owner
+    if (ownerName) {
+      const owns = { "@type": "Person", name: ownerName };
+      if (ownerKA.length) owns.knowsAbout = ownerKA;
+      if (ownerCity || ownerState) {
+        const wAddr = { "@type": "PostalAddress" };
+        if (ownerCity)  wAddr.addressLocality = ownerCity;
+        if (ownerState) wAddr.addressRegion   = ownerState;
+        owns.workLocation = { "@type": "Place", address: wAddr };
+      }
+      schema.owns = owns;
+    }
+
+    schema.knowsLanguage = "en";
+
+    // Founding location
+    if (foundingCity || foundingState) {
+      const fAddr = { "@type": "PostalAddress" };
+      if (foundingCity)  fAddr.addressLocality = foundingCity;
+      if (foundingState) fAddr.addressRegion   = foundingState;
+      schema.foundingLocation = { "@type": "Place", address: fAddr };
+    }
+
+    // Area served — GeoCircle takes priority; fall back to text
+    if (lat && lng) {
+      const radiusMeters = radiusMiles ? String(Math.round(parseFloat(radiusMiles) * 1609.34)) : "16093";
+      schema.areaServed = {
+        "@type": "GeoCircle",
+        geoMidpoint: { "@type": "GeoCoordinates", latitude: lat, longitude: lng },
+        geoRadius: radiusMeters
+      };
+    } else if (areaServedText) {
+      schema.areaServed = areaServedText;
+    }
+
+    // Contact point
+    if (phone) {
+      const cp = { "@type": "contactPoint", availableLanguage: "en", telephone: phone };
+      if (cpName)              cp.name       = cpName;
+      if (cpAreaServed.length) cp.areaserved = cpAreaServed;
+      cp.contactType = contactType;
+      schema.contactPoint = cp;
+    }
+
+    // Potential action
+    const action = { "@type": "InteractAction" };
+    if (services.length) {
+      action.result = { "@type": "OfferCatalog", name: services };
+    }
+    action.agent = { "@type": "Person", name: "Customer Support" };
+
+    const participant = { "@type": "Organization" };
+    if (name)            participant.name   = name;
+    if (url)             participant.url    = url;
+    if (profiles.length) participant.sameAs = profiles;
+    action.participant = participant;
+
+    const locAddr = { "@type": "PostalAddress" };
+    if (city)  locAddr.addressLocality = city;
+    if (state) locAddr.addressRegion   = state;
+    const loc = { "@type": "Place" };
+    if (Object.keys(locAddr).length > 1) loc.address = locAddr;
+    if (cityRefs.length) loc.sameAs = cityRefs;
+    if (days.length) {
+      loc.openingHoursSpecification = {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: days,
+        opens,
+        closes
+      };
+    }
+    if (Object.keys(loc).length > 1) action.location = loc;
+
+    schema.potentialAction = action;
+
+    return JSON.stringify(schema, null, 2);
   }
 };
 
@@ -1735,6 +2070,122 @@ const cpIndustryPresets = {
     services: ['Burial Plots','Mausoleum Crypts','Cremation Niches','Ground Burial Services','Pre-Planning Services','Veteran Memorial Services','Memorial Markers and Monuments','Grave Maintenance']
   }
 };
+
+// ── Organization industry presets ─────────────────────────────────────────────
+const orgIndustryPresets = {
+  'funeral': [
+    'http://www.productontology.org/id/Funeral_home',
+    'http://www.productontology.org/id/Funeral',
+    'http://www.productontology.org/id/Funeral_director',
+    'http://www.productontology.org/id/Cremation',
+    'http://www.productontology.org/id/Burial',
+    'http://www.productontology.org/id/Embalming',
+    'http://www.productontology.org/id/Mausoleum',
+    'http://www.productontology.org/id/Columbarium',
+    'http://www.productontology.org/id/Obituary',
+  ],
+  'cemetery': [
+    'http://www.productontology.org/id/Cemetery',
+    'http://www.productontology.org/id/Burial',
+    'http://www.productontology.org/id/Cremation',
+    'http://www.productontology.org/id/Mausoleum',
+    'http://www.productontology.org/id/Columbarium',
+    'http://www.productontology.org/id/Headstone',
+  ],
+  'assisted-living': [
+    'http://www.productontology.org/id/Assisted_living',
+    'http://www.productontology.org/id/Elderly_care',
+    'http://www.productontology.org/id/Retirement_home',
+    'http://www.productontology.org/id/Senior_living',
+    'http://www.productontology.org/id/Residential_care',
+    'http://www.productontology.org/id/Respite_care',
+    'http://www.productontology.org/id/Dementia_caregiving',
+    'http://www.productontology.org/id/Independent_senior_living',
+  ],
+  'home-health': [
+    'http://www.productontology.org/id/Home_care',
+    'http://www.productontology.org/id/Home_health_nursing',
+    'http://www.productontology.org/id/Hospice',
+    'http://www.productontology.org/id/Palliative_care',
+    'http://www.productontology.org/id/Physical_therapy',
+    'http://www.productontology.org/id/Occupational_therapy',
+    'http://www.productontology.org/id/Speech-language_pathology',
+    'http://www.productontology.org/id/Nursing_home_care',
+  ],
+  'windows-doors': [
+    'http://www.productontology.org/id/Window',
+    'http://www.productontology.org/id/Door',
+    'http://www.productontology.org/id/Home_improvement',
+    'http://www.productontology.org/id/Casement_window',
+    'http://www.productontology.org/id/Bay_window',
+    'http://www.productontology.org/id/Storm_window',
+    'http://www.productontology.org/id/Sliding_glass_door',
+    'http://www.productontology.org/id/Glass',
+  ],
+  'window-covering': [
+    'http://www.productontology.org/id/Window_covering',
+    'http://www.productontology.org/id/Window_blind',
+    'http://www.productontology.org/id/Window_shutter',
+    'http://www.productontology.org/id/Roller_shutter',
+    'http://www.productontology.org/id/Curtain',
+  ],
+  'hvac': [
+    'http://www.productontology.org/id/HVAC',
+    'http://www.productontology.org/id/Air_conditioning',
+    'http://www.productontology.org/id/Heating',
+    'http://www.productontology.org/id/Plumbing',
+  ],
+  'roofing-siding': [
+    'http://www.productontology.org/id/Roof',
+    'http://www.productontology.org/id/Siding',
+    'http://www.productontology.org/id/Home_improvement',
+  ],
+  'general-contractor': [
+    'http://www.productontology.org/id/General_contractor',
+    'http://www.productontology.org/id/Home_improvement',
+    'http://www.productontology.org/id/Landscaping',
+    'http://www.productontology.org/id/Flooring',
+    'http://www.productontology.org/id/Painting',
+  ],
+  'preneed': [
+    'http://www.productontology.org/id/Funeral_director',
+    'http://www.productontology.org/id/Funeral',
+    'http://www.productontology.org/id/Life_insurance',
+    'http://www.productontology.org/id/Insurance',
+  ],
+  'b2b': [
+    'http://www.productontology.org/id/Business-to-business',
+    'http://www.productontology.org/id/Business_marketing',
+    'http://www.productontology.org/id/Marketing',
+    'http://www.productontology.org/id/Consulting',
+    'http://www.productontology.org/id/Management_consulting',
+    'http://www.productontology.org/id/Sales',
+  ],
+  'b2b-preneed': [
+    'http://www.productontology.org/id/Business-to-business',
+    'http://www.productontology.org/id/Business_marketing',
+    'http://www.productontology.org/id/Life_insurance',
+    'http://www.productontology.org/id/Insurance',
+    'http://www.productontology.org/id/Funeral_director',
+    'http://www.productontology.org/id/Funeral',
+  ],
+};
+
+function applyOrgPreset(value) {
+  if (!value) return;
+  const urls = orgIndustryPresets[value];
+  if (!urls) return;
+  const list = document.getElementById('org-identifier-list');
+  list.innerHTML = '';
+  urls.forEach(url => {
+    list.insertAdjacentHTML('beforeend',
+      `<div class="org-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">` +
+      `<input type="url" class="org-identifier-url" value="${url}" style="flex:1">` +
+      `<button class="remove-btn" onclick="this.closest('.org-row').remove();updatePreview()">Remove</button>` +
+      `</div>`);
+  });
+  updatePreview();
+}
 
 // ── Update preview ────────────────────────────────────────────────────────────
 function updatePreview() {
