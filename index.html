@@ -621,9 +621,11 @@ const forms = {
     <div class="section">
       <div class="section-title">Provider (Business)</div>
       <div class="field"><label>Business Name <span class="req">*</span></label>
-        <input type="text" id="svc-biz-name" placeholder="e.g. Howe-Peterson Funeral Home"></div>
+        <input type="text" id="svc-biz-name" placeholder="e.g. Lake Cook Exteriors, Inc."></div>
       <div class="field"><label>Business Website URL <span class="req">*</span></label>
         <input type="url" id="svc-biz-url" placeholder="https://www.example.com/"></div>
+      <div class="field"><label>Telephone</label>
+        <input type="text" id="svc-telephone" placeholder="e.g. (847) 991-9180"></div>
       <div class="field-row cols-2">
         <div class="field"><label>Price Range</label>
           <select id="svc-price-range">
@@ -639,19 +641,50 @@ const forms = {
       <div id="svc-locations"></div>
       <button class="add-btn" id="svc-add-location">+ Add Location</button>
     </div>
+    <div class="section">
+      <div class="section-title">Sub-Services / Offer Catalog</div>
+      <div class="info-note" style="margin-bottom:12px;">Adds a <code>hasOfferCatalog</code> to the provider with individual sub-service entries. Leave empty to omit.</div>
+      <div class="field"><label>Catalog Name</label>
+        <input type="text" id="svc-catalog-name" placeholder="e.g. Services"></div>
+      <div id="svc-subservices-list"></div>
+      <button class="add-btn" id="svc-add-subservice">+ Add Sub-Service</button>
+    </div>
   `,
 
   'product': () => `
     <div class="section">
       <div class="section-title">Product Information</div>
       <div class="field"><label>Product Name <span class="req">*</span></label>
-        <input type="text" id="prod-name" placeholder="e.g. Casket Sprays"></div>
+        <input type="text" id="prod-name" placeholder="e.g. Double-Hung Replacement Window"></div>
       <div class="field"><label>Image URL</label>
         <input type="url" id="prod-image" placeholder="https://..."></div>
       <div class="field"><label>Description <span class="req">*</span></label>
         <textarea id="prod-desc" rows="3" placeholder="Describe the product..."></textarea></div>
       <div class="field"><label>Page URL <span class="req">*</span></label>
         <input type="url" id="prod-url" placeholder="https://www.example.com/product-page/"></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>SKU</label>
+          <input type="text" id="prod-sku" placeholder="e.g. WIN-DH-001"></div>
+        <div class="field"><label>Category</label>
+          <input type="text" id="prod-category" placeholder="e.g. Replacement Windows"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Offers</div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Price Currency</label>
+          <input type="text" id="prod-currency" value="USD"></div>
+        <div class="field"><label>Price</label>
+          <input type="text" id="prod-price" placeholder="e.g. 0.00"></div>
+      </div>
+      <div class="field"><label>Availability</label>
+        <select id="prod-availability">
+          <option value="https://schema.org/InStock">In Stock</option>
+          <option value="https://schema.org/OutOfStock">Out of Stock</option>
+          <option value="https://schema.org/PreOrder">Pre-Order</option>
+          <option value="https://schema.org/Discontinued">Discontinued</option>
+        </select>
+      </div>
     </div>
     <div class="section">
       <div class="section-title">Rating</div>
@@ -665,9 +698,11 @@ const forms = {
     <div class="section">
       <div class="section-title">Brand (Business)</div>
       <div class="field"><label>Business Name <span class="req">*</span></label>
-        <input type="text" id="prod-biz-name" placeholder="e.g. Howe-Peterson Funeral Home"></div>
+        <input type="text" id="prod-biz-name" placeholder="e.g. Lake Cook Exteriors, Inc."></div>
       <div class="field"><label>Business Website URL <span class="req">*</span></label>
         <input type="url" id="prod-biz-url" placeholder="https://www.example.com/"></div>
+      <div class="field"><label>Telephone</label>
+        <input type="text" id="prod-telephone" placeholder="e.g. (847) 991-9180"></div>
       <div class="field-row cols-2">
         <div class="field"><label>Price Range</label>
           <select id="prod-price-range">
@@ -1200,6 +1235,7 @@ function renderForm(type) {
     addLocation('lb');
   } else if (type === 'service') {
     document.getElementById('svc-add-location').addEventListener('click', () => { addLocation('svc'); updatePreview(); });
+    document.getElementById('svc-add-subservice').addEventListener('click', () => { addSvcSubservice(); updatePreview(); });
     addLocation('svc');
   } else if (type === 'product') {
     document.getElementById('prod-add-location').addEventListener('click', () => { addLocation('prod'); updatePreview(); });
@@ -1250,6 +1286,23 @@ function renderForm(type) {
 
   panel.addEventListener('input', updatePreview);
   panel.addEventListener('change', updatePreview);
+}
+
+// ── Service sub-service row helper ───────────────────────────────────────────
+function addSvcSubservice() {
+  document.getElementById('svc-subservices-list').insertAdjacentHTML('beforeend',
+    `<div class="svc-sub-row" style="border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-bottom:10px;">` +
+    `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">` +
+    `<strong style="font-size:12px;color:#5f6368;">Sub-Service</strong>` +
+    `<button class="remove-btn" onclick="this.closest('.svc-sub-row').remove();updatePreview()">Remove</button>` +
+    `</div>` +
+    `<div class="field"><label style="font-size:12px;">Name</label>` +
+    `<input type="text" class="svc-sub-name" placeholder="e.g. Siding" oninput="updatePreview()" style="width:100%;padding:8px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;"></div>` +
+    `<div class="field"><label style="font-size:12px;">Description</label>` +
+    `<textarea class="svc-sub-desc" rows="2" placeholder="Describe this sub-service..." oninput="updatePreview()" style="width:100%;resize:vertical;padding:8px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;"></textarea></div>` +
+    `<div class="field"><label style="font-size:12px;">Image URL <span style="font-weight:400;color:#9ca3af;">(optional)</span></label>` +
+    `<input type="url" class="svc-sub-image" placeholder="https://..." oninput="updatePreview()" style="width:100%;padding:8px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;"></div>` +
+    `</div>`);
 }
 
 // ── Organization dynamic row helpers ─────────────────────────────────────────
@@ -1702,7 +1755,7 @@ const generators = {
     const schema = { "@context": "https://schema.org", "@type": "Service" };
     const name = v('svc-name'), image = v('svc-image'), desc = v('svc-desc');
     const pageUrl = v('svc-url'), currency = v('svc-currency') || 'USD', price = v('svc-price') || '$$';
-    const bizName = v('svc-biz-name'), bizUrl = v('svc-biz-url');
+    const bizName = v('svc-biz-name'), bizUrl = v('svc-biz-url'), telephone = v('svc-telephone');
     const priceRange = document.getElementById('svc-price-range')?.value || '$$';
     const logo = v('svc-logo');
 
@@ -1716,12 +1769,39 @@ const generators = {
       price
     };
     const provider = { "@type": "LocalBusiness" };
-    if (bizName) provider.name       = bizName;
-    if (bizUrl)  provider.url        = bizUrl;
+    if (bizName)    provider.name       = bizName;
+    if (bizUrl)     provider.url        = bizUrl;
     provider.priceRange = priceRange;
-    if (logo)    provider.logo       = logo;
+    if (logo)       provider.logo       = logo;
     if (addresses.length === 1)    provider.address = addresses[0];
     else if (addresses.length > 1) provider.address = addresses;
+    if (telephone)  provider.telephone  = telephone;
+
+    // hasOfferCatalog
+    const catalogName = v('svc-catalog-name');
+    const subRows = document.querySelectorAll('.svc-sub-row');
+    if (subRows.length > 0) {
+      const items = [];
+      subRows.forEach(row => {
+        const subName = row.querySelector('.svc-sub-name')?.value.trim() || '';
+        const subDesc = row.querySelector('.svc-sub-desc')?.value.trim() || '';
+        const subImg  = row.querySelector('.svc-sub-image')?.value.trim() || '';
+        if (subName) {
+          const offered = { "@type": "Service", name: subName };
+          if (subDesc) offered.description = subDesc;
+          offered.image = subImg;
+          items.push({ "@type": "Offer", itemOffered: offered });
+        }
+      });
+      if (items.length > 0) {
+        provider.hasOfferCatalog = {
+          "@type": "OfferCatalog",
+          name: catalogName || "Services",
+          itemListElement: items
+        };
+      }
+    }
+
     schema.provider = provider;
     return JSON.stringify(schema, null, 2);
   },
@@ -1733,23 +1813,36 @@ const generators = {
 
     const schema = { "@context": "http://schema.org", "@type": "Product" };
     const name = v('prod-name'), image = v('prod-image'), desc = v('prod-desc');
-    const pageUrl = v('prod-url'), rating = v('prod-rating') || '5', ratingCount = v('prod-rating-count') || '5';
-    const bizName = v('prod-biz-name'), bizUrl = v('prod-biz-url');
+    const pageUrl = v('prod-url'), sku = v('prod-sku'), category = v('prod-category');
+    const currency = v('prod-currency') || 'USD', price = v('prod-price');
+    const availability = document.getElementById('prod-availability')?.value || 'https://schema.org/InStock';
+    const rating = v('prod-rating') || '5', ratingCount = v('prod-rating-count') || '5';
+    const bizName = v('prod-biz-name'), bizUrl = v('prod-biz-url'), telephone = v('prod-telephone');
     const priceRange = document.getElementById('prod-price-range')?.value || '$$';
     const logo = v('prod-logo');
 
-    if (name)    schema.name        = name;
-    if (image)   schema.image       = image;
-    if (desc)    schema.description = desc;
-    if (pageUrl) schema.url         = pageUrl;
+    if (name)     schema.name        = name;
+    if (image)    schema.image       = image;
+    if (desc)     schema.description = desc;
+    if (pageUrl)  schema.url         = pageUrl;
+    if (sku)      schema.sku         = sku;
+    if (category) schema.category    = category;
+    schema.offers = {
+      "@type": "Offer",
+      ...(pageUrl && { url: pageUrl }),
+      priceCurrency: currency,
+      ...(price && { price }),
+      availability
+    };
     schema.aggregateRating = { "@type": "AggregateRating", ratingValue: rating, ratingCount };
     const brand = { "@type": "LocalBusiness" };
-    if (bizName) brand.name       = bizName;
-    if (bizUrl)  brand.url        = bizUrl;
+    if (bizName)   brand.name       = bizName;
+    if (bizUrl)    brand.url        = bizUrl;
     brand.priceRange = priceRange;
-    if (logo)    brand.logo       = logo;
+    if (logo)      brand.logo       = logo;
     if (addresses.length === 1)    brand.address = addresses[0];
     else if (addresses.length > 1) brand.address = addresses;
+    if (telephone) brand.telephone  = telephone;
     schema.brand = brand;
     return JSON.stringify(schema, null, 2);
   },
