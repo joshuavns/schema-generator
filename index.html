@@ -418,6 +418,21 @@ const forms = {
 
     <div class="section">
       <div class="section-title">Business Identity</div>
+      <div class="field">
+        <label>Load by Vertical <span class="hint">(pre-fills alternate names &amp; identifier below)</span></label>
+        <select id="lb-vertical">
+          <option value="">— Select a vertical —</option>
+          <option value="funeral">Deathcare — Funeral Homes &amp; Cremation</option>
+          <option value="cemetery">Cemetery</option>
+          <option value="assisted-living">Assisted Living</option>
+          <option value="home-health">Home Health / Home Care</option>
+          <option value="windows-doors">Windows &amp; Doors</option>
+          <option value="window-covering">Window Covering</option>
+          <option value="hvac">HVAC &amp; Heating / Cooling</option>
+          <option value="roofing-siding">Roofing &amp; Siding</option>
+          <option value="general-contractor">General Contractor / Home Services</option>
+        </select>
+      </div>
       <div class="field"><label>Alternate Names <span class="hint">(one per line)</span></label>
         <textarea id="lb-altnames" rows="3" placeholder="funeral home&#10;funeral parlor&#10;mortuary&#10;crematory"></textarea></div>
       <div class="field"><label>Business Type URL <span class="hint">(Wikidata additionalType)</span></label>
@@ -441,6 +456,7 @@ const forms = {
           <optgroup label="Windows, Doors &amp; Exteriors">
             <option value="http://www.productontology.org/id/Window">Window Company</option>
             <option value="http://www.productontology.org/id/Door">Door Company</option>
+            <option value="http://www.productontology.org/id/Window_covering">Window Covering</option>
             <option value="http://www.productontology.org/id/Roof">Roofing Company</option>
             <option value="http://www.productontology.org/id/Siding">Siding Company</option>
           </optgroup>
@@ -1171,6 +1187,7 @@ function renderForm(type) {
   panel.innerHTML = forms[type]();
 
   if (type === 'local-business') {
+    document.getElementById('lb-vertical').addEventListener('change', e => { applyLBPreset(e.target.value); });
     document.getElementById('lb-mode-toggle').addEventListener('click', e => {
       const btn = e.target.closest('.mode-btn');
       if (!btn) return;
@@ -2279,6 +2296,45 @@ function applyOrgPreset(value) {
   const altInput = document.getElementById('org-altnames');
   if (altInput && preset.alternateNames) {
     altInput.value = preset.alternateNames.join(', ');
+  }
+
+  updatePreview();
+}
+
+function applyLBPreset(value) {
+  if (!value) return;
+  const preset = orgIndustryPresets[value];
+  if (!preset) return;
+
+  // Fill alternate names (one per line for LB textarea)
+  const altInput = document.getElementById('lb-altnames');
+  if (altInput && preset.alternateNames) {
+    altInput.value = preset.alternateNames.join('\n');
+  }
+
+  // Set identifier select to primary value for this vertical
+  const identifierMap = {
+    'funeral':            'http://www.productontology.org/id/Funeral_home',
+    'cemetery':           'http://www.productontology.org/id/Cemetery',
+    'assisted-living':    'http://www.productontology.org/id/Assisted_living',
+    'home-health':        'http://www.productontology.org/id/Home_care',
+    'windows-doors':      'http://www.productontology.org/id/Window',
+    'window-covering':    'http://www.productontology.org/id/Window_covering',
+    'hvac':               'http://www.productontology.org/id/HVAC',
+    'roofing-siding':     'http://www.productontology.org/id/Roof',
+    'general-contractor': 'http://www.productontology.org/id/General_contractor',
+  };
+  const identifierVal = identifierMap[value];
+  if (identifierVal) {
+    const sel = document.getElementById('lb-identifier');
+    if (sel) {
+      sel.value = identifierVal;
+      // Trigger knowsAbout auto-check
+      const suggestions = identifierSuggestions[identifierVal] || [];
+      document.querySelectorAll('.lb-ka').forEach(cb => {
+        cb.checked = suggestions.includes(cb.value);
+      });
+    }
   }
 
   updatePreview();
