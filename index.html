@@ -529,64 +529,9 @@ const forms = {
       <div class="field"><label>Founder Name</label>
         <input type="text" id="lb-founder" placeholder="e.g. Jay Smith"></div>
       <div class="field">
-        <label>Founder Knows About <span class="hint">(check all that apply — auto-suggests on identifier select)</span></label>
-        <div class="ka-groups">
-          <div class="ka-group">
-            <div class="ka-group-title">Funeral &amp; Death Care</div>
-            <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Funeral"> Funeral</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Cremation"> Cremation</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Burial"> Burial</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Cemetery"> Cemetery</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Embalming"> Embalming</label>
-            </div>
-          </div>
-          <div class="ka-group">
-            <div class="ka-group-title">Senior &amp; Home Care</div>
-            <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Home_care"> Home Care</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Assisted_living"> Assisted Living</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Nursing_home_care"> Nursing Home</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Hospice"> Hospice</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Dementia"> Dementia</label>
-            </div>
-          </div>
-          <div class="ka-group">
-            <div class="ka-group-title">Windows, Doors &amp; Exteriors</div>
-            <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Window"> Window</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Door"> Door</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Roof"> Roofing</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Siding"> Siding</label>
-            </div>
-          </div>
-          <div class="ka-group">
-            <div class="ka-group-title">HVAC, Plumbing &amp; Utilities</div>
-            <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/HVAC"> HVAC</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Plumbing"> Plumbing</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Air_conditioning"> Air Conditioning</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Heating"> Heating</label>
-            </div>
-          </div>
-          <div class="ka-group">
-            <div class="ka-group-title">Construction &amp; Remodeling</div>
-            <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/General_contractor"> General Contractor</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Landscaping"> Landscaping</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Flooring"> Flooring</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Painting"> Painting</label>
-            </div>
-          </div>
-          <div class="ka-group">
-            <div class="ka-group-title">Pet Services</div>
-            <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Veterinary_medicine"> Veterinary</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Animal_grooming"> Pet Grooming</label>
-              <label class="checkbox-item"><input type="checkbox" class="lb-ka" value="http://www.productontology.org/doc/Cremation"> Pet Cremation</label>
-            </div>
-          </div>
-        </div>
+        <label>Founder Knows About <span class="hint">(productontology.org — auto-fills on vertical/identifier select)</span></label>
+        <div id="lb-ka-list"></div>
+        <button class="add-btn" id="lb-add-ka">+ Add knowsAbout URL</button>
       </div>
       <div class="field-row cols-2">
         <div class="field"><label>Work Location City</label>
@@ -1235,6 +1180,7 @@ function renderForm(type) {
 
   if (type === 'local-business') {
     document.getElementById('lb-vertical').addEventListener('change', e => { applyLBPreset(e.target.value); });
+    document.getElementById('lb-add-ka').addEventListener('click', () => { addLBKaRow(); updatePreview(); });
     document.getElementById('lb-mode-toggle').addEventListener('click', e => {
       const btn = e.target.closest('.mode-btn');
       if (!btn) return;
@@ -1298,6 +1244,15 @@ function renderForm(type) {
 
   panel.addEventListener('input', updatePreview);
   panel.addEventListener('change', updatePreview);
+}
+
+// ── Local Business knowsAbout row helper ─────────────────────────────────────
+function addLBKaRow(url = '') {
+  document.getElementById('lb-ka-list').insertAdjacentHTML('beforeend',
+    `<div class="org-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">` +
+    `<input type="url" class="lb-ka-url" value="${url}" placeholder="http://www.productontology.org/doc/..." style="flex:1" oninput="updatePreview()">` +
+    `<button class="remove-btn" onclick="this.closest('.org-row').remove();updatePreview()">Remove</button>` +
+    `</div>`);
 }
 
 // ── Service sub-service row helper ───────────────────────────────────────────
@@ -1706,7 +1661,7 @@ const generators = {
     const altNames   = altNamesRaw ? altNamesRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
     const services   = servicesRaw ? servicesRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
     const socialUrls = socialRaw   ? socialRaw.split('\n').map(s => s.trim()).filter(Boolean)   : [];
-    const knowsAbout = Array.from(document.querySelectorAll('.lb-ka:checked')).map(c => c.value);
+    const knowsAbout = Array.from(document.querySelectorAll('#lb-ka-list .lb-ka-url')).map(i => i.value.trim()).filter(Boolean);
     const locations  = getLBLocations();
 
     const shared = {
@@ -2439,13 +2394,12 @@ function applyLBPreset(value) {
   const identifierVal = identifierMap[value];
   if (identifierVal) {
     const sel = document.getElementById('lb-identifier');
-    if (sel) {
-      sel.value = identifierVal;
-      // Trigger knowsAbout auto-check
-      const suggestions = identifierSuggestions[identifierVal] || [];
-      document.querySelectorAll('.lb-ka').forEach(cb => {
-        cb.checked = suggestions.includes(cb.value);
-      });
+    if (sel) sel.value = identifierVal;
+    // Fill knowsAbout rows from identifierSuggestions
+    const kaList = document.getElementById('lb-ka-list');
+    if (kaList) {
+      kaList.innerHTML = '';
+      (identifierSuggestions[identifierVal] || []).forEach(url => addLBKaRow(url));
     }
   }
 
@@ -2516,11 +2470,12 @@ document.addEventListener('change', e => {
     // Show/hide custom input
     const wrap = document.getElementById('lb-identifier-custom-wrap');
     if (wrap) wrap.style.display = val === '__custom__' ? '' : 'none';
-    // Auto-check knowsAbout suggestions
-    const suggestions = identifierSuggestions[val] || [];
-    document.querySelectorAll('.lb-ka').forEach(cb => {
-      cb.checked = suggestions.includes(cb.value);
-    });
+    // Fill knowsAbout rows from identifierSuggestions
+    const kaList = document.getElementById('lb-ka-list');
+    if (kaList) {
+      kaList.innerHTML = '';
+      (identifierSuggestions[val] || []).forEach(url => addLBKaRow(url));
+    }
     updatePreview();
   }
 });
