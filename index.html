@@ -1950,7 +1950,7 @@ const generators = {
     if (state)   addr.addressRegion    = state;
     if (zip)     addr.postalCode       = zip;
     if (country) addr.addressCountry   = country;
-    if (Object.keys(addr).length > 1) schema.address = addr;
+    if (street || city || state || zip) schema.address = addr;
 
     // Owner
     if (ownerName) {
