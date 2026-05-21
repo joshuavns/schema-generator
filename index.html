@@ -2073,117 +2073,214 @@ const cpIndustryPresets = {
 
 // ── Organization industry presets ─────────────────────────────────────────────
 const orgIndustryPresets = {
-  'funeral': [
-    'http://www.productontology.org/id/Funeral_home',
-    'http://www.productontology.org/id/Funeral',
-    'http://www.productontology.org/id/Funeral_director',
-    'http://www.productontology.org/id/Cremation',
-    'http://www.productontology.org/id/Burial',
-    'http://www.productontology.org/id/Embalming',
-    'http://www.productontology.org/id/Mausoleum',
-    'http://www.productontology.org/id/Columbarium',
-    'http://www.productontology.org/id/Obituary',
-  ],
-  'cemetery': [
-    'http://www.productontology.org/id/Cemetery',
-    'http://www.productontology.org/id/Burial',
-    'http://www.productontology.org/id/Cremation',
-    'http://www.productontology.org/id/Mausoleum',
-    'http://www.productontology.org/id/Columbarium',
-    'http://www.productontology.org/id/Headstone',
-  ],
-  'assisted-living': [
-    'http://www.productontology.org/id/Assisted_living',
-    'http://www.productontology.org/id/Elderly_care',
-    'http://www.productontology.org/id/Retirement_home',
-    'http://www.productontology.org/id/Senior_living',
-    'http://www.productontology.org/id/Residential_care',
-    'http://www.productontology.org/id/Respite_care',
-    'http://www.productontology.org/id/Dementia_caregiving',
-    'http://www.productontology.org/id/Independent_senior_living',
-  ],
-  'home-health': [
-    'http://www.productontology.org/id/Home_care',
-    'http://www.productontology.org/id/Home_health_nursing',
-    'http://www.productontology.org/id/Hospice',
-    'http://www.productontology.org/id/Palliative_care',
-    'http://www.productontology.org/id/Physical_therapy',
-    'http://www.productontology.org/id/Occupational_therapy',
-    'http://www.productontology.org/id/Speech-language_pathology',
-    'http://www.productontology.org/id/Nursing_home_care',
-  ],
-  'windows-doors': [
-    'http://www.productontology.org/id/Window',
-    'http://www.productontology.org/id/Door',
-    'http://www.productontology.org/id/Home_improvement',
-    'http://www.productontology.org/id/Casement_window',
-    'http://www.productontology.org/id/Bay_window',
-    'http://www.productontology.org/id/Storm_window',
-    'http://www.productontology.org/id/Sliding_glass_door',
-    'http://www.productontology.org/id/Glass',
-  ],
-  'window-covering': [
-    'http://www.productontology.org/id/Window_covering',
-    'http://www.productontology.org/id/Window_blind',
-    'http://www.productontology.org/id/Window_shutter',
-    'http://www.productontology.org/id/Roller_shutter',
-    'http://www.productontology.org/id/Curtain',
-  ],
-  'hvac': [
-    'http://www.productontology.org/id/HVAC',
-    'http://www.productontology.org/id/Air_conditioning',
-    'http://www.productontology.org/id/Heating',
-    'http://www.productontology.org/id/Plumbing',
-  ],
-  'roofing-siding': [
-    'http://www.productontology.org/id/Roof',
-    'http://www.productontology.org/id/Siding',
-    'http://www.productontology.org/id/Home_improvement',
-  ],
-  'general-contractor': [
-    'http://www.productontology.org/id/General_contractor',
-    'http://www.productontology.org/id/Home_improvement',
-    'http://www.productontology.org/id/Landscaping',
-    'http://www.productontology.org/id/Flooring',
-    'http://www.productontology.org/id/Painting',
-  ],
-  'preneed': [
-    'http://www.productontology.org/id/Funeral_director',
-    'http://www.productontology.org/id/Funeral',
-    'http://www.productontology.org/id/Life_insurance',
-    'http://www.productontology.org/id/Insurance',
-  ],
-  'b2b': [
-    'http://www.productontology.org/id/Business-to-business',
-    'http://www.productontology.org/id/Business_marketing',
-    'http://www.productontology.org/id/Marketing',
-    'http://www.productontology.org/id/Consulting',
-    'http://www.productontology.org/id/Management_consulting',
-    'http://www.productontology.org/id/Sales',
-  ],
-  'b2b-preneed': [
-    'http://www.productontology.org/id/Business-to-business',
-    'http://www.productontology.org/id/Business_marketing',
-    'http://www.productontology.org/id/Life_insurance',
-    'http://www.productontology.org/id/Insurance',
-    'http://www.productontology.org/id/Funeral_director',
-    'http://www.productontology.org/id/Funeral',
-  ],
+  'funeral': {
+    identifiers: [
+      'http://www.productontology.org/id/Funeral_home',
+      'http://www.productontology.org/id/Funeral',
+      'http://www.productontology.org/id/Funeral_director',
+      'http://www.productontology.org/id/Cremation',
+      'http://www.productontology.org/id/Burial',
+      'http://www.productontology.org/id/Embalming',
+      'http://www.productontology.org/id/Mausoleum',
+      'http://www.productontology.org/id/Columbarium',
+      'http://www.productontology.org/id/Obituary',
+    ],
+    alternateNames: [
+      'Funeral Home', 'Funeral Services', 'Cremation Services', 'Burial Services',
+      'Memorial Services', 'Funeral Planning', 'Pre-Planning Services', 'Grief Support',
+      'Funeral Director', 'Mortuary Services', 'Funeral Arrangements', 'Celebration of Life',
+    ],
+  },
+  'cemetery': {
+    identifiers: [
+      'http://www.productontology.org/id/Cemetery',
+      'http://www.productontology.org/id/Burial',
+      'http://www.productontology.org/id/Cremation',
+      'http://www.productontology.org/id/Mausoleum',
+      'http://www.productontology.org/id/Columbarium',
+      'http://www.productontology.org/id/Headstone',
+    ],
+    alternateNames: [
+      'Cemetery Services', 'Burial Plots', 'Cremation Niches', 'Mausoleum Crypts',
+      'Interment Services', 'Headstones', 'Monuments', 'Memorial Markers',
+      'Columbarium', 'Pre-Planning', 'Grave Maintenance', 'Memorial Park',
+    ],
+  },
+  'assisted-living': {
+    identifiers: [
+      'http://www.productontology.org/id/Assisted_living',
+      'http://www.productontology.org/id/Elderly_care',
+      'http://www.productontology.org/id/Retirement_home',
+      'http://www.productontology.org/id/Senior_living',
+      'http://www.productontology.org/id/Residential_care',
+      'http://www.productontology.org/id/Respite_care',
+      'http://www.productontology.org/id/Dementia_caregiving',
+      'http://www.productontology.org/id/Independent_senior_living',
+    ],
+    alternateNames: [
+      'Assisted Living', 'Senior Care', 'Memory Care', 'Dementia Care',
+      'Independent Living', 'Senior Housing', 'Residential Care', 'Personal Care',
+      'Elder Care', 'Retirement Community', 'Senior Living', 'Respite Care',
+      'Medication Management',
+    ],
+  },
+  'home-health': {
+    identifiers: [
+      'http://www.productontology.org/id/Home_care',
+      'http://www.productontology.org/id/Home_health_nursing',
+      'http://www.productontology.org/id/Hospice',
+      'http://www.productontology.org/id/Palliative_care',
+      'http://www.productontology.org/id/Physical_therapy',
+      'http://www.productontology.org/id/Occupational_therapy',
+      'http://www.productontology.org/id/Speech-language_pathology',
+      'http://www.productontology.org/id/Nursing_home_care',
+    ],
+    alternateNames: [
+      'Home Care', 'Home Health', 'In-Home Care', 'Senior Care',
+      'Skilled Nursing', 'Physical Therapy', 'Occupational Therapy', 'Speech Therapy',
+      'Hospice Care', 'Companion Care', 'Personal Care', 'Home Health Aide',
+      'Palliative Care', 'In-Home Support',
+    ],
+  },
+  'windows-doors': {
+    identifiers: [
+      'http://www.productontology.org/id/Window',
+      'http://www.productontology.org/id/Door',
+      'http://www.productontology.org/id/Home_improvement',
+      'http://www.productontology.org/id/Casement_window',
+      'http://www.productontology.org/id/Bay_window',
+      'http://www.productontology.org/id/Storm_window',
+      'http://www.productontology.org/id/Sliding_glass_door',
+      'http://www.productontology.org/id/Glass',
+    ],
+    alternateNames: [
+      'Window Replacement', 'Door Replacement', 'Window Installation', 'Door Installation',
+      'Energy-Efficient Windows', 'Replacement Windows', 'Entry Doors', 'Patio Doors',
+      'Casement Windows', 'Bay Windows', 'Storm Windows', 'Sliding Glass Doors',
+      'Window Repair', 'Door Repair', 'Glass Installation',
+    ],
+  },
+  'window-covering': {
+    identifiers: [
+      'http://www.productontology.org/id/Window_covering',
+      'http://www.productontology.org/id/Window_blind',
+      'http://www.productontology.org/id/Window_shutter',
+      'http://www.productontology.org/id/Roller_shutter',
+      'http://www.productontology.org/id/Curtain',
+    ],
+    alternateNames: [
+      'Window Blinds', 'Custom Shades', 'Shutters', 'Drapes',
+      'Curtains', 'Motorized Blinds', 'Roman Shades', 'Roller Shades',
+      'Cellular Shades', 'Wood Blinds', 'Vertical Blinds', 'Plantation Shutters',
+      'Window Treatments', 'Custom Blinds',
+    ],
+  },
+  'hvac': {
+    identifiers: [
+      'http://www.productontology.org/id/HVAC',
+      'http://www.productontology.org/id/Air_conditioning',
+      'http://www.productontology.org/id/Heating',
+      'http://www.productontology.org/id/Plumbing',
+    ],
+    alternateNames: [
+      'HVAC Services', 'Air Conditioning', 'Heating', 'Cooling',
+      'AC Repair', 'Furnace Repair', 'Heat Pump', 'AC Installation',
+      'Heating Installation', 'HVAC Maintenance', 'Duct Cleaning', 'Indoor Air Quality',
+    ],
+  },
+  'roofing-siding': {
+    identifiers: [
+      'http://www.productontology.org/id/Roof',
+      'http://www.productontology.org/id/Siding',
+      'http://www.productontology.org/id/Home_improvement',
+    ],
+    alternateNames: [
+      'Roofing', 'Siding', 'Roof Replacement', 'Siding Installation',
+      'Roof Repair', 'Gutters', 'Roof Installation', 'Vinyl Siding',
+      'Metal Roofing', 'Asphalt Shingles', 'Siding Repair', 'Gutter Installation',
+    ],
+  },
+  'general-contractor': {
+    identifiers: [
+      'http://www.productontology.org/id/General_contractor',
+      'http://www.productontology.org/id/Home_improvement',
+      'http://www.productontology.org/id/Landscaping',
+      'http://www.productontology.org/id/Flooring',
+      'http://www.productontology.org/id/Painting',
+    ],
+    alternateNames: [
+      'Home Improvement', 'Remodeling', 'General Contracting', 'Kitchen Remodeling',
+      'Bathroom Remodeling', 'Home Renovation', 'Flooring', 'Interior Painting',
+      'Exterior Painting', 'Landscaping', 'Deck Building', 'Home Repair',
+    ],
+  },
+  'preneed': {
+    identifiers: [
+      'http://www.productontology.org/id/Funeral_director',
+      'http://www.productontology.org/id/Funeral',
+      'http://www.productontology.org/id/Life_insurance',
+      'http://www.productontology.org/id/Insurance',
+    ],
+    alternateNames: [
+      'Preneed', 'Funeral Pre-Planning', 'Pre-Arranged Funerals', 'Preneed Insurance',
+      'Funeral Planning', 'Final Expense Insurance', 'Burial Insurance',
+      'Pre-Need Funeral Arrangements', 'Preneed Counseling',
+    ],
+  },
+  'b2b': {
+    identifiers: [
+      'http://www.productontology.org/id/Business-to-business',
+      'http://www.productontology.org/id/Business_marketing',
+      'http://www.productontology.org/id/Marketing',
+      'http://www.productontology.org/id/Consulting',
+      'http://www.productontology.org/id/Management_consulting',
+      'http://www.productontology.org/id/Sales',
+    ],
+    alternateNames: [
+      'Business Consulting', 'Marketing Services', 'B2B Services', 'Professional Services',
+      'Business Solutions', 'Sales Support', 'Marketing Strategy', 'Business Development',
+      'Corporate Services', 'Enterprise Solutions',
+    ],
+  },
+  'b2b-preneed': {
+    identifiers: [
+      'http://www.productontology.org/id/Business-to-business',
+      'http://www.productontology.org/id/Business_marketing',
+      'http://www.productontology.org/id/Life_insurance',
+      'http://www.productontology.org/id/Insurance',
+      'http://www.productontology.org/id/Funeral_director',
+      'http://www.productontology.org/id/Funeral',
+    ],
+    alternateNames: [
+      'Preneed Marketing', 'Funeral Home Marketing', 'Preneed Programs', 'Preneed Insurance',
+      'Funeral Pre-Planning', 'Preneed Sales Training', 'Preneed Agent Support',
+      'Funeral Marketing', 'Preneed Consulting', 'Preneed Solutions',
+    ],
+  },
 };
 
 function applyOrgPreset(value) {
   if (!value) return;
-  const urls = orgIndustryPresets[value];
-  if (!urls) return;
+  const preset = orgIndustryPresets[value];
+  if (!preset) return;
+
+  // Fill identifiers
   const list = document.getElementById('org-identifier-list');
   list.innerHTML = '';
-  urls.forEach(url => {
+  preset.identifiers.forEach(url => {
     list.insertAdjacentHTML('beforeend',
       `<div class="org-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">` +
       `<input type="url" class="org-identifier-url" value="${url}" style="flex:1">` +
       `<button class="remove-btn" onclick="this.closest('.org-row').remove();updatePreview()">Remove</button>` +
       `</div>`);
   });
+
+  // Fill alternate names
+  const altInput = document.getElementById('org-altnames');
+  if (altInput && preset.alternateNames) {
+    altInput.value = preset.alternateNames.join(', ');
+  }
+
   updatePreview();
 }
 
