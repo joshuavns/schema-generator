@@ -355,7 +355,6 @@
 <script>
 let currentType = 'local-business';
 let lbMode = 'homepage'; // 'homepage' or 'per-location'
-let cpMode  = 'single';  // 'single' or 'multi'
 
 document.getElementById('tabs').addEventListener('click', e => {
   const tab = e.target.closest('.tab');
@@ -707,11 +706,6 @@ const forms = {
       </div>
     </div>
 
-    <div class="mode-toggle" id="cp-mode-toggle">
-      <button class="mode-btn ${cpMode === 'single' ? 'active' : ''}" data-mode="single">Single Location</button>
-      <button class="mode-btn ${cpMode === 'multi'  ? 'active' : ''}" data-mode="multi">Multiple Locations</button>
-    </div>
-
     <div class="section">
       <div class="section-title">Page Info</div>
       <div class="field"><label>Page URL <span class="req">*</span> <span class="hint">(URL where this schema installs)</span></label>
@@ -726,36 +720,17 @@ const forms = {
         <input type="text" id="cp-name" placeholder="e.g. Columbus Windows and Siding Company"></div>
       <div class="field"><label>Homepage URL <span class="req">*</span></label>
         <input type="url" id="cp-url" placeholder="https://www.example.com/"></div>
-      <div id="cp-tel-wrap" style="${cpMode === 'multi' ? 'display:none' : ''}">
-        <div class="field"><label>Phone Number <span class="hint">(single location only)</span></label>
-          <input type="text" id="cp-tel" placeholder="(555) 123-4567"></div>
-      </div>
       <div class="field"><label>Image URL</label>
         <input type="url" id="cp-image" placeholder="https://..."></div>
       <div class="field"><label>Additional Type <span class="hint">(Wikipedia URL for business type)</span></label>
         <input type="url" id="cp-addtype" placeholder="https://en.wikipedia.org/wiki/Siding_(construction)"></div>
     </div>
 
-    <div class="section" id="cp-address-section" style="${cpMode === 'multi' ? 'display:none' : ''}">
-      <div class="section-title">Business Address</div>
-      <div class="field"><label>Street Address</label>
-        <input type="text" id="cp-street" placeholder="e.g. 705 Lakeview Plaza Blvd Ste H"></div>
-      <div class="field-row cols-3">
-        <div class="field"><label>City</label>
-          <input type="text" id="cp-city" placeholder="Columbus"></div>
-        <div class="field"><label>State</label>
-          <input type="text" id="cp-state" placeholder="OH"></div>
-        <div class="field"><label>Zip</label>
-          <input type="text" id="cp-zip" placeholder="43085"></div>
-      </div>
-      <div class="field" style="max-width:120px"><label>Country</label>
-        <input type="text" id="cp-country" value="US"></div>
-    </div>
-
-    <div class="section" id="cp-departments-section" style="${cpMode === 'single' ? 'display:none' : ''}">
-      <div class="section-title">Locations (Departments)</div>
-      <div id="cp-departments"></div>
-      <button class="add-btn" id="cp-add-dept">+ Add Location</button>
+    <div class="section">
+      <div class="section-title">Location(s)</div>
+      <div class="info-note" style="margin-bottom:10px;">Add one location for a single-location business, or add more to output them as departments. The location name field only appears once you have more than one location.</div>
+      <div id="cp-locations"></div>
+      <button class="add-btn" id="cp-add-location">+ Add Location</button>
     </div>
 
     <div class="section">
@@ -1149,34 +1124,32 @@ function cpFAQHTML(index) {
     </div>`;
 }
 
-// ── City Page department block HTML ───────────────────────────────────────────
-function cpDeptHTML(index) {
+// ── City Page location block HTML ─────────────────────────────────────────────
+// The Location Name field is hidden by default and only shown (via
+// updateCPLocationUI) when there is more than one location.
+function cpLocationHTML(index) {
   return `
     <div class="location-block" data-index="${index}">
       <div class="block-header">
-        <span class="block-title">Location ${index + 1}</span>
-        <button class="remove-btn" onclick="removeCPDept(${index})">Remove</button>
+        <span class="block-title">Location</span>
+        <button class="remove-btn" onclick="removeCPLocation(${index})">Remove</button>
       </div>
-      <div class="field-row cols-2">
-        <div class="field"><label>Location Label <span class="hint">(e.g. Island Park)</span></label>
-          <input type="text" class="cp-dept-label" placeholder="e.g. Island Park"></div>
-        <div class="field"><label>Location ID / Slug <span class="hint">(e.g. islandpark — no spaces)</span></label>
-          <input type="text" class="cp-dept-slug" placeholder="e.g. islandpark"></div>
-      </div>
+      <div class="field cp-loc-name-wrap" style="display:none"><label>Location Name <span class="hint">(distinguishes this location, e.g. Island Park)</span></label>
+        <input type="text" class="cp-loc-name" placeholder="e.g. Island Park"></div>
       <div class="field"><label>Phone</label>
-        <input type="text" class="cp-dept-phone" placeholder="(555) 123-4567"></div>
+        <input type="text" class="cp-loc-phone" placeholder="(555) 123-4567"></div>
       <div class="field"><label>Street Address</label>
-        <input type="text" class="cp-dept-street" placeholder="e.g. 3930 Long Beach Rd"></div>
+        <input type="text" class="cp-loc-street" placeholder="e.g. 3930 Long Beach Rd"></div>
       <div class="field-row cols-3">
         <div class="field"><label>City</label>
-          <input type="text" class="cp-dept-city" placeholder="Island Park"></div>
+          <input type="text" class="cp-loc-city" placeholder="Island Park"></div>
         <div class="field"><label>State</label>
-          <input type="text" class="cp-dept-state" placeholder="NY"></div>
+          <input type="text" class="cp-loc-state" placeholder="NY"></div>
         <div class="field"><label>Zip</label>
-          <input type="text" class="cp-dept-zip" placeholder="11558"></div>
+          <input type="text" class="cp-loc-zip" placeholder="11558"></div>
       </div>
       <div class="field" style="max-width:120px"><label>Country</label>
-        <input type="text" class="cp-dept-country" value="US"></div>
+        <input type="text" class="cp-loc-country" value="US"></div>
     </div>`;
 }
 
@@ -1210,19 +1183,7 @@ function renderForm(type) {
     addFAQPair();
     addFAQPair();
   } else if (type === 'city-page') {
-    document.getElementById('cp-mode-toggle').addEventListener('click', e => {
-      const btn = e.target.closest('.mode-btn');
-      if (!btn) return;
-      cpMode = btn.dataset.mode;
-      document.querySelectorAll('#cp-mode-toggle .mode-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('cp-tel-wrap').style.display          = cpMode === 'multi' ? 'none' : '';
-      document.getElementById('cp-address-section').style.display   = cpMode === 'multi' ? 'none' : '';
-      document.getElementById('cp-departments-section').style.display = cpMode === 'single' ? 'none' : '';
-      updatePreview();
-    });
     document.getElementById('cp-reset-btn').addEventListener('click', () => {
-      cpMode = 'single';
       renderForm('city-page');
       updatePreview();
     });
@@ -1231,14 +1192,14 @@ function renderForm(type) {
     });
     document.getElementById('cp-add-service').addEventListener('click', () => { addCPService(); updatePreview(); });
     document.getElementById('cp-add-faq').addEventListener('click', () => { addCPFAQ(); updatePreview(); });
-    document.getElementById('cp-add-dept').addEventListener('click', () => { addCPDept(); updatePreview(); });
+    document.getElementById('cp-add-location').addEventListener('click', () => { addCPLocation(); updatePreview(); });
     addCPService();
     addCPService();
     addCPService();
     addCPFAQ();
     addCPFAQ();
     addCPFAQ();
-    if (cpMode === 'multi') { addCPDept(); addCPDept(); }
+    addCPLocation();
   } else if (type === 'organization') {
     document.getElementById('org-industry').addEventListener('change',      e  => { applyOrgPreset(e.target.value); });
     document.getElementById('org-add-addtype').addEventListener('click',    () => { addOrgRow('org-addtype-list',    'org-addtype-url',    'https://www.wikidata.org/wiki/Q...'); updatePreview(); });
@@ -1423,24 +1384,36 @@ function moveCPService(index, direction) {
   updatePreview();
 }
 
-// ── City Page department add + remove ─────────────────────────────────────────
-function addCPDept() {
-  const container = document.getElementById('cp-departments');
+// ── City Page location add + remove ───────────────────────────────────────────
+function addCPLocation() {
+  const container = document.getElementById('cp-locations');
   const index = container.querySelectorAll('.location-block').length;
-  container.insertAdjacentHTML('beforeend', cpDeptHTML(index));
+  container.insertAdjacentHTML('beforeend', cpLocationHTML(index));
+  updateCPLocationUI();
 }
 
-function removeCPDept(index) {
-  const container = document.getElementById('cp-departments');
+function removeCPLocation(index) {
+  const container = document.getElementById('cp-locations');
   const items = container.querySelectorAll('.location-block');
-  if (items.length <= 1) return;
+  if (items.length <= 1) return;   // always keep at least one location
   items[index].remove();
-  container.querySelectorAll('.location-block').forEach((item, i) => {
-    item.dataset.index = i;
-    item.querySelector('.block-title').textContent = `Location ${i + 1}`;
-    item.querySelector('.remove-btn').setAttribute('onclick', `removeCPDept(${i})`);
-  });
+  updateCPLocationUI();
   updatePreview();
+}
+
+// Show the Location Name field + numbered titles only when there's >1 location.
+function updateCPLocationUI() {
+  const blocks = document.querySelectorAll('#cp-locations .location-block');
+  const multi = blocks.length > 1;
+  blocks.forEach((b, i) => {
+    b.dataset.index = i;
+    const title = b.querySelector('.block-title');
+    if (title) title.textContent = multi ? `Location ${i + 1}` : 'Location';
+    const nameWrap = b.querySelector('.cp-loc-name-wrap');
+    if (nameWrap) nameWrap.style.display = multi ? '' : 'none';
+    const rm = b.querySelector('.remove-btn');
+    if (rm) rm.setAttribute('onclick', `removeCPLocation(${i})`);
+  });
 }
 
 // ── Read location data ────────────────────────────────────────────────────────
@@ -1875,14 +1848,8 @@ const generators = {
     const schemaIdSuffix = v('cp-schema-id');
     const name           = v('cp-name');
     const homepageUrl    = v('cp-url');
-    const tel            = v('cp-tel');
     const image          = v('cp-image');
     const addType        = v('cp-addtype');
-    const street         = v('cp-street');
-    const city           = v('cp-city');
-    const state          = v('cp-state');
-    const zip            = v('cp-zip');
-    const country        = v('cp-country') || 'US';
     const targetCity     = v('cp-target-city');
     const targetState    = v('cp-target-state');
     const catalogInput   = v('cp-catalog-name');
@@ -1904,54 +1871,54 @@ const generators = {
       .map(p => ({ q: p.querySelector('.cp-faq-q')?.value.trim() || '', a: p.querySelector('.cp-faq-a')?.value.trim() || '' }))
       .filter(p => p.q || p.a);
 
+    // Locations — one = single business address; two or more = departments
+    const buildAddr = loc => {
+      const a = { "@type": "PostalAddress" };
+      if (loc.street)  a.streetAddress   = loc.street;
+      if (loc.city)    a.addressLocality = loc.city;
+      if (loc.state)   a.addressRegion   = loc.state;
+      if (loc.zip)     a.postalCode      = loc.zip;
+      if (loc.country) a.addressCountry  = loc.country;
+      return Object.keys(a).length > 1 ? a : null;
+    };
+    const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    const locations = Array.from(document.querySelectorAll('#cp-locations .location-block')).map(b => ({
+      name:    b.querySelector('.cp-loc-name')?.value.trim()    || '',
+      phone:   b.querySelector('.cp-loc-phone')?.value.trim()   || '',
+      street:  b.querySelector('.cp-loc-street')?.value.trim()  || '',
+      city:    b.querySelector('.cp-loc-city')?.value.trim()    || '',
+      state:   b.querySelector('.cp-loc-state')?.value.trim()   || '',
+      zip:     b.querySelector('.cp-loc-zip')?.value.trim()     || '',
+      country: b.querySelector('.cp-loc-country')?.value.trim() || 'US',
+    })).filter(l => l.name || l.phone || l.street || l.city || l.state || l.zip);
+    const singleLoc = locations.length < 2 ? (locations[0] || null) : null;
+
     // Build LocalBusiness — property order matches target output
     const lb = { "@type": "LocalBusiness" };
     if (lbId)        lb["@id"]         = lbId;
     if (name)        lb.name            = name;
     if (homepageUrl) lb.url             = homepageUrl;
 
-    // Single mode: telephone at top level; multi mode: telephone lives in each department
-    if (cpMode === 'single' && tel) lb.telephone = tel;
+    // One location: telephone at top level; two or more: telephone lives in each department.
+    if (singleLoc && singleLoc.phone) lb.telephone = singleLoc.phone;
 
     if (image)   lb.image          = image;
     if (addType) lb.additionalType = addType;
 
-    if (cpMode === 'single') {
-      const addr = { "@type": "PostalAddress" };
-      if (street)  addr.streetAddress   = street;
-      if (city)    addr.addressLocality  = city;
-      if (state)   addr.addressRegion    = state;
-      if (zip)     addr.postalCode       = zip;
-      if (country) addr.addressCountry   = country;
-      if (Object.keys(addr).length > 1) lb.address = addr;
-    } else {
-      const depts = Array.from(document.querySelectorAll('#cp-departments .location-block')).map(d => {
-        const label    = d.querySelector('.cp-dept-label')?.value.trim()   || '';
-        const slug     = d.querySelector('.cp-dept-slug')?.value.trim()    || '';
-        const dPhone   = d.querySelector('.cp-dept-phone')?.value.trim()   || '';
-        const dStreet  = d.querySelector('.cp-dept-street')?.value.trim()  || '';
-        const dCity    = d.querySelector('.cp-dept-city')?.value.trim()    || '';
-        const dState   = d.querySelector('.cp-dept-state')?.value.trim()   || '';
-        const dZip     = d.querySelector('.cp-dept-zip')?.value.trim()     || '';
-        const dCountry = d.querySelector('.cp-dept-country')?.value.trim() || 'US';
-
+    if (locations.length >= 2) {
+      lb.department = locations.map(loc => {
         const dept = { "@type": "LocalBusiness" };
-        if (slug)   dept["@id"]    = homepageUrl ? homepageUrl.replace(/\/$/, '') + '/#' + slug + '-location' : '';
-        if (label)  dept.name      = name ? `${name} - ${label}` : label;
-        if (dPhone) dept.telephone = dPhone;
-
-        const dAddr = { "@type": "PostalAddress" };
-        if (dStreet)  dAddr.streetAddress   = dStreet;
-        if (dCity)    dAddr.addressLocality  = dCity;
-        if (dState)   dAddr.addressRegion    = dState;
-        if (dZip)     dAddr.postalCode       = dZip;
-        if (dCountry) dAddr.addressCountry   = dCountry;
-        if (Object.keys(dAddr).length > 1) dept.address = dAddr;
-
+        const slug = slugify(loc.name || loc.city);
+        if (homepageUrl && slug) dept["@id"] = homepageUrl.replace(/\/$/, '') + '/#' + slug + '-location';
+        dept.name = (name && loc.name) ? `${name} - ${loc.name}` : (loc.name || name || '');
+        if (loc.phone) dept.telephone = loc.phone;
+        const dAddr = buildAddr(loc);
+        if (dAddr) dept.address = dAddr;
         return dept;
       }).filter(d => d.name || d["@id"]);
-
-      if (depts.length) lb.department = depts;
+    } else if (singleLoc) {
+      const addr = buildAddr(singleLoc);
+      if (addr) lb.address = addr;
     }
 
     if (areaName) lb.areaServed = { "@type": "City", name: areaName };
