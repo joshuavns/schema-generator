@@ -1107,17 +1107,24 @@ function cpServiceHTML(index) {
   return `
     <div class="faq-pair" data-index="${index}">
       <div class="faq-pair-header">
-        <span class="faq-pair-num">Service ${index + 1}</span>
+        <span class="faq-pair-num">Item ${index + 1}</span>
         <div style="display:flex;gap:4px;align-items:center;">
           <button class="remove-btn" onclick="moveCPService(${index},-1)" title="Move up">▲</button>
           <button class="remove-btn" onclick="moveCPService(${index},1)" title="Move down">▼</button>
           <button class="remove-btn" onclick="removeCPService(${index})">Remove</button>
         </div>
       </div>
-      <div class="field"><label>Service Name</label>
-        <input type="text" class="cp-svc-name" placeholder="e.g. Vinyl Siding Replacement"></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Type</label>
+          <select class="cp-svc-type">
+            <option value="Service" selected>Service</option>
+            <option value="Product">Product</option>
+          </select></div>
+        <div class="field"><label>Name</label>
+          <input type="text" class="cp-svc-name" placeholder="e.g. Vinyl Siding Replacement"></div>
+      </div>
       <div class="field"><label>Description</label>
-        <textarea class="cp-svc-desc" rows="2" placeholder="Service description..."></textarea></div>
+        <textarea class="cp-svc-desc" rows="2" placeholder="Description..."></textarea></div>
     </div>`;
 }
 
@@ -1886,7 +1893,11 @@ const generators = {
     const catalogName = catalogInput || (name && areaName ? `Our ${name} Services in ${areaName}` : '');
 
     const services = Array.from(document.querySelectorAll('#cp-services .faq-pair'))
-      .map(s => ({ name: s.querySelector('.cp-svc-name')?.value.trim() || '', desc: s.querySelector('.cp-svc-desc')?.value.trim() || '' }))
+      .map(s => ({
+        name: s.querySelector('.cp-svc-name')?.value.trim() || '',
+        desc: s.querySelector('.cp-svc-desc')?.value.trim() || '',
+        type: s.querySelector('.cp-svc-type')?.value || 'Service'
+      }))
       .filter(s => s.name || s.desc);
 
     const faqs = Array.from(document.querySelectorAll('#cp-faq-pairs .faq-pair'))
@@ -1949,13 +1960,18 @@ const generators = {
       lb.hasOfferCatalog = {
         "@type": "OfferCatalog",
         name: catalogName,
-        itemListElement: services.map(s => ({
-          "@type": "Offer",
-          itemOffered: Object.assign(
-            { "@type": "Service", name: s.name, serviceType: s.name },
-            s.desc ? { description: s.desc } : {}
-          )
-        }))
+        itemListElement: services.map(s => {
+          const itemOffered = s.type === 'Product'
+            ? Object.assign(
+                { "@type": "Product", name: s.name },
+                s.desc ? { description: s.desc } : {}
+              )
+            : Object.assign(
+                { "@type": "Service", name: s.name, serviceType: s.name },
+                s.desc ? { description: s.desc } : {}
+              );
+          return { "@type": "Offer", itemOffered };
+        })
       };
     }
 
