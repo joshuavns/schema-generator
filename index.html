@@ -605,6 +605,11 @@ const forms = {
       <div id="svc-subservices-list"></div>
       <button class="add-btn" id="svc-add-subservice">+ Add Item</button>
     </div>
+    <div class="section">
+      <div class="section-title">FAQ Questions &amp; Answers <span class="hint">(optional — adds an FAQPage in a combined @graph)</span></div>
+      <div id="svc-faq-pairs"></div>
+      <button class="add-btn" id="svc-add-faq">+ Add Question</button>
+    </div>
   `,
 
   'product': () => `
@@ -673,6 +678,11 @@ const forms = {
       <div class="section-title">Locations</div>
       <div id="prod-locations"></div>
       <button class="add-btn" id="prod-add-location">+ Add Location</button>
+    </div>
+    <div class="section">
+      <div class="section-title">FAQ Questions &amp; Answers <span class="hint">(optional — adds an FAQPage in a combined @graph)</span></div>
+      <div id="prod-faq-pairs"></div>
+      <button class="add-btn" id="prod-add-faq">+ Add Question</button>
     </div>
   `,
 
@@ -1124,6 +1134,48 @@ function cpFAQHTML(index) {
     </div>`;
 }
 
+// ── Page FAQ (Service / Product tabs) HTML + add/remove ───────────────────────
+// Optional FAQ block appended to the Service and Product tabs. Prefix is the
+// field-id namespace ('svc' or 'prod').
+function pageFAQHTML(prefix, index) {
+  return `
+    <div class="faq-pair" data-index="${index}">
+      <div class="faq-pair-header">
+        <span class="faq-pair-num">Q${index + 1}</span>
+        <button class="remove-btn" onclick="removePageFAQ('${prefix}', ${index})">Remove</button>
+      </div>
+      <div class="field"><label>Question</label>
+        <input type="text" class="${prefix}-faq-q" placeholder="e.g. How long does installation take?"></div>
+      <div class="field">
+        <label>Answer <span class="hint">(HTML &lt;a&gt; tags supported)</span></label>
+        <textarea class="${prefix}-faq-a" rows="2" placeholder="Answer text..."></textarea>
+        <div class="link-helper">
+          <input type="text" class="link-anchor" placeholder="Exact phrase to link">
+          <input type="url"  class="link-url"    placeholder="https://...">
+          <button class="link-insert-btn" onclick="insertFAQLink(this)">+ Link</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function addPageFAQ(prefix) {
+  const container = document.getElementById(`${prefix}-faq-pairs`);
+  const index = container.querySelectorAll('.faq-pair').length;
+  container.insertAdjacentHTML('beforeend', pageFAQHTML(prefix, index));
+}
+
+function removePageFAQ(prefix, index) {
+  const container = document.getElementById(`${prefix}-faq-pairs`);
+  const pairs = container.querySelectorAll('.faq-pair');
+  pairs[index].remove();
+  container.querySelectorAll('.faq-pair').forEach((p, i) => {
+    p.dataset.index = i;
+    p.querySelector('.faq-pair-num').textContent = `Q${i + 1}`;
+    p.querySelector('.remove-btn').setAttribute('onclick', `removePageFAQ('${prefix}', ${i})`);
+  });
+  updatePreview();
+}
+
 // ── City Page location block HTML ─────────────────────────────────────────────
 // The Location Name field is hidden by default and only shown (via
 // updateCPLocationUI) when there is more than one location.
@@ -1174,9 +1226,11 @@ function renderForm(type) {
   } else if (type === 'service') {
     document.getElementById('svc-add-location').addEventListener('click', () => { addLocation('svc'); updatePreview(); });
     document.getElementById('svc-add-subservice').addEventListener('click', () => { addSvcSubservice(); updatePreview(); });
+    document.getElementById('svc-add-faq').addEventListener('click', () => { addPageFAQ('svc'); updatePreview(); });
     addLocation('svc');
   } else if (type === 'product') {
     document.getElementById('prod-add-location').addEventListener('click', () => { addLocation('prod'); updatePreview(); });
+    document.getElementById('prod-add-faq').addEventListener('click', () => { addPageFAQ('prod'); updatePreview(); });
     addLocation('prod');
   } else if (type === 'faq') {
     document.getElementById('faq-add-pair').addEventListener('click', () => { addFAQPair(); updatePreview(); });
@@ -1463,6 +1517,25 @@ function buildSvcAddressArray(locations) {
     if (loc.phone)   addr.telephone        = loc.phone;
     return addr;
   }).filter(a => Object.keys(a).length > 1);
+}
+
+// ── Combine a primary schema node with an FAQPage in a single @graph ──────────
+// Used by the Service and Product tabs when optional FAQs are filled in.
+// `node` is the primary schema (its own @context is stripped and hoisted to the
+// graph); `pageUrl` (if present) seeds the FAQPage @id as <pageUrl>/#faq.
+function buildGraphWithFAQ(node, faqs, pageUrl) {
+  const primary = { ...node };
+  delete primary["@context"];
+
+  const faqPage = { "@type": "FAQPage" };
+  if (pageUrl) faqPage["@id"] = pageUrl.replace(/\/$/, '') + '/#faq';
+  faqPage.mainEntity = faqs.map(p => ({
+    "@type": "Question",
+    name: p.q,
+    acceptedAnswer: { "@type": "Answer", text: p.a }
+  }));
+
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": [primary, faqPage] }, null, 2);
 }
 
 // ── Build LocalBusiness schema object ─────────────────────────────────────────
@@ -1757,6 +1830,13 @@ const generators = {
     }
 
     schema.provider = provider;
+
+    // Optional FAQ → combined @graph
+    const faqs = Array.from(document.querySelectorAll('#svc-faq-pairs .faq-pair'))
+      .map(p => ({ q: p.querySelector('.svc-faq-q')?.value.trim() || '', a: p.querySelector('.svc-faq-a')?.value.trim() || '' }))
+      .filter(p => p.q || p.a);
+    if (faqs.length) return buildGraphWithFAQ(schema, faqs, pageUrl);
+
     return JSON.stringify(schema, null, 2);
   },
 
@@ -1798,6 +1878,13 @@ const generators = {
     else if (addresses.length > 1) brand.address = addresses;
     if (telephone) brand.telephone  = telephone;
     schema.brand = brand;
+
+    // Optional FAQ → combined @graph
+    const faqs = Array.from(document.querySelectorAll('#prod-faq-pairs .faq-pair'))
+      .map(p => ({ q: p.querySelector('.prod-faq-q')?.value.trim() || '', a: p.querySelector('.prod-faq-a')?.value.trim() || '' }))
+      .filter(p => p.q || p.a);
+    if (faqs.length) return buildGraphWithFAQ(schema, faqs, pageUrl);
+
     return JSON.stringify(schema, null, 2);
   },
 
