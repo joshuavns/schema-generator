@@ -708,6 +708,7 @@ const forms = {
           <option value="">— Select to auto-fill —</option>
           <option value="funeral">Funeral Homes &amp; Cremation</option>
           <option value="assisted-living">Assisted Living Facilities</option>
+          <option value="home-care">In-Home Care (Non-Medical)</option>
           <option value="home-health">Home Health</option>
           <option value="windows-doors">Windows &amp; Doors</option>
           <option value="window-covering">Window Covering</option>
@@ -2198,6 +2199,12 @@ const cpIndustryPresets = {
     additionalType: 'https://en.wikipedia.org/wiki/Assisted_living',
     schemaId: 'assistedliving',
     services: ['Personal Care Services','Medication Management','Dining Services','Social and Recreational Activities','Housekeeping and Maintenance','Memory Care','Respite Care']
+  },
+  'home-care': {
+    label: 'In-Home Care (Non-Medical)',
+    additionalType: 'https://en.wikipedia.org/wiki/Home_care',
+    schemaId: 'homecare',
+    services: ['Companion Care','Personal Care',"Alzheimer's & Dementia Care","Parkinson's Care",'Respite Care','Transitional Care','Chronic Disease Care','Veterans Care & VA Benefits Assistance','Surgery Assistance & Sitter Services','End-of-Life Support Care']
   },
   'home-health': {
     label: 'Home Health',
