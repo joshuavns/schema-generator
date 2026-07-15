@@ -1993,15 +1993,27 @@ const generators = {
         if (it.name)  p.name        = it.name;
         if (it.image) p.image       = it.image;
         if (it.desc)  p.description = it.desc;
-        p.aggregateRating = { "@type": "AggregateRating", ratingValue: it.rating, ratingCount: it.ratingCount };
         p.brand = brandRef;
         return p;
       });
+
+      // Google requires a ProductGroup to carry offers, review, or
+      // aggregateRating. With no prices/reviews here, we roll the item ratings
+      // up into a single group-level aggregateRating (avg value, summed count).
+      const counts = items.map(it => parseInt(it.ratingCount, 10) || 0);
+      const values = items.map(it => parseFloat(it.rating) || 0);
+      const totalCount = counts.reduce((a, b) => a + b, 0);
+      const avgValue = totalCount ? values.reduce((s, v, i) => s + v * counts[i], 0) / totalCount : 0;
 
       const group = { "@type": "ProductGroup" };
       if (pageUrl) { group["@id"] = pageUrl.replace(/\/$/, '') + '/#product'; group.url = pageUrl; }
       if (hubName) group.name = hubName;
       group.brand = brandRef;
+      if (totalCount) group.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: String(Math.round(avgValue * 10) / 10),
+        ratingCount: String(totalCount)
+      };
       group.hasVariant = variants;
       graph.push(group);
     }
