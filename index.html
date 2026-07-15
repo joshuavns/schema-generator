@@ -614,14 +614,60 @@ const forms = {
 
   'product': () => `
     <div class="section">
-      <div class="section-title">Page Info</div>
-      <div class="field"><label>Page URL <span class="req">*</span> <span class="hint">(the single page all items appear on)</span></label>
-        <input type="url" id="prod-url" placeholder="https://www.example.com/product-page/"></div>
+      <div class="section-title">Page Type</div>
+      <div class="field"><label>What kind of page is this?</label>
+        <select id="prod-mode">
+          <option value="hub">Product Hub &mdash; one page featuring several varieties</option>
+          <option value="single">Single Product Page &mdash; one product</option>
+        </select>
+      </div>
     </div>
     <div class="section">
-      <div class="section-title">Items <span class="hint">(one block per product on the page — click + Add Item for more)</span></div>
+      <div class="section-title">Page Info</div>
+      <div class="field"><label>Page URL <span class="req">*</span> <span class="hint">(the page this schema installs on)</span></label>
+        <input type="url" id="prod-url" placeholder="https://www.example.com/product-page/"></div>
+      <div class="field" id="prod-hub-name-wrap"><label>Hub / Collection Name <span class="hint">(e.g. Casket Sprays)</span></label>
+        <input type="text" id="prod-hub-name" placeholder="e.g. Casket Sprays"></div>
+    </div>
+    <div class="section" id="prod-hub-section">
+      <div class="section-title">Items <span class="hint">(one block per variety on the page — click + Add Item for more)</span></div>
       <div id="prod-items"></div>
       <button class="add-btn" id="prod-add-item">+ Add Item</button>
+    </div>
+    <div class="section" id="prod-single-section" style="display:none">
+      <div class="section-title">Product</div>
+      <div class="field"><label>Product Name <span class="req">*</span></label>
+        <input type="text" id="prod-s-name" placeholder="e.g. Double-Hung Replacement Window"></div>
+      <div class="field"><label>Image URL</label>
+        <input type="url" id="prod-s-image" placeholder="https://..."></div>
+      <div class="field"><label>Description <span class="req">*</span></label>
+        <textarea id="prod-s-desc" rows="3" placeholder="Describe the product..."></textarea></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>SKU <span class="hint">(optional)</span></label>
+          <input type="text" id="prod-s-sku" placeholder="e.g. WIN-DH-001"></div>
+        <div class="field"><label>Category <span class="hint">(optional)</span></label>
+          <input type="text" id="prod-s-category" placeholder="e.g. Replacement Windows"></div>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Price <span class="hint">(optional &mdash; leave blank to omit the offer)</span></label>
+          <input type="text" id="prod-s-price" placeholder="e.g. 599.00"></div>
+        <div class="field"><label>Currency</label>
+          <input type="text" id="prod-s-currency" value="USD"></div>
+      </div>
+      <div class="field"><label>Availability <span class="hint">(only used when a price is set)</span></label>
+        <select id="prod-s-availability">
+          <option value="https://schema.org/InStock">In Stock</option>
+          <option value="https://schema.org/OutOfStock">Out of Stock</option>
+          <option value="https://schema.org/PreOrder">Pre-Order</option>
+          <option value="https://schema.org/Discontinued">Discontinued</option>
+        </select>
+      </div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Rating Value</label>
+          <input type="text" id="prod-s-rating" value="5"></div>
+        <div class="field"><label>Rating Count</label>
+          <input type="text" id="prod-s-rating-count" value="5"></div>
+      </div>
     </div>
     <div class="section">
       <div class="section-title">Brand (Business)</div>
@@ -1240,11 +1286,19 @@ function renderForm(type) {
     document.getElementById('svc-add-faq').addEventListener('click', () => { addPageFAQ('svc'); updatePreview(); });
     addLocation('svc');
   } else if (type === 'product') {
+    const applyProdMode = () => {
+      const mode = document.getElementById('prod-mode').value;
+      document.getElementById('prod-hub-section').style.display    = mode === 'hub'    ? '' : 'none';
+      document.getElementById('prod-hub-name-wrap').style.display  = mode === 'hub'    ? '' : 'none';
+      document.getElementById('prod-single-section').style.display = mode === 'single' ? '' : 'none';
+    };
+    document.getElementById('prod-mode').addEventListener('change', () => { applyProdMode(); updatePreview(); });
     document.getElementById('prod-add-item').addEventListener('click', () => { addProdItem(); updatePreview(); });
     document.getElementById('prod-add-location').addEventListener('click', () => { addLocation('prod'); updatePreview(); });
     document.getElementById('prod-add-faq').addEventListener('click', () => { addPageFAQ('prod'); updatePreview(); });
     addProdItem();
     addLocation('prod');
+    applyProdMode();
   } else if (type === 'faq') {
     document.getElementById('faq-add-pair').addEventListener('click', () => { addFAQPair(); updatePreview(); });
     addFAQPair();
@@ -1857,70 +1911,108 @@ const generators = {
 
   'product': () => {
     const v = id => document.getElementById(id)?.value.trim() || '';
+    const mode = document.getElementById('prod-mode')?.value || 'hub';
     const locations = getSvcLocations('prod');
     const addresses = buildSvcAddressArray(locations);
 
     const pageUrl = v('prod-url');
 
-    // Shared brand/business — reused by every item on the page
+    // Shared business — defined once as its own @graph node with a stable @id,
+    // then referenced by every product via brand: { @id }. No more repetition.
     const bizName = v('prod-biz-name'), bizUrl = v('prod-biz-url'), telephone = v('prod-telephone');
     const priceRange = document.getElementById('prod-price-range')?.value || '$$';
     const logo = v('prod-logo');
-    const brand = { "@type": "LocalBusiness" };
-    if (bizName)   brand.name       = bizName;
-    if (bizUrl)    brand.url        = bizUrl;
-    brand.priceRange = priceRange;
-    if (logo)      brand.logo       = logo;
-    if (addresses.length === 1)    brand.address = addresses[0];
-    else if (addresses.length > 1) brand.address = addresses;
-    if (telephone) brand.telephone  = telephone;
+    const bizId = (bizUrl || pageUrl) ? (bizUrl || pageUrl).replace(/\/$/, '') + '/#business' : '';
 
-    // Collect one Product per item block
-    const items = Array.from(document.querySelectorAll('#prod-items .prod-item')).map(el => {
-      const q = sel => el.querySelector(sel)?.value.trim() || '';
-      return {
-        name:        q('.prod-name'),
-        image:       q('.prod-image'),
-        desc:        q('.prod-desc'),
-        rating:      q('.prod-rating') || '5',
-        ratingCount: q('.prod-rating-count') || '5'
-      };
-    }).filter(it => it.name || it.desc || it.image);
+    const business = { "@type": "LocalBusiness" };
+    if (bizId)     business["@id"]   = bizId;
+    if (bizName)   business.name       = bizName;
+    if (bizUrl)    business.url        = bizUrl;
+    business.priceRange = priceRange;
+    if (logo)      business.logo       = logo;
+    if (addresses.length === 1)    business.address = addresses[0];
+    else if (addresses.length > 1) business.address = addresses;
+    if (telephone) business.telephone  = telephone;
 
-    const buildProduct = it => {
-      const p = { "@type": "Product" };
-      if (it.name)  p.name        = it.name;
-      if (it.image) p.image       = it.image;
-      if (it.desc)  p.description = it.desc;
-      if (pageUrl)  p.url         = pageUrl;
-      p.aggregateRating = { "@type": "AggregateRating", ratingValue: it.rating, ratingCount: it.ratingCount };
-      p.brand = brand;
-      return p;
-    };
+    // Reference the business by @id when we have one; otherwise inline it.
+    const brandRef = bizId ? { "@id": bizId } : business;
 
-    const products = items.map(buildProduct);
-
-    // Optional FAQ → combined @graph
+    // Optional FAQ node (shared by both modes)
     const faqs = Array.from(document.querySelectorAll('#prod-faq-pairs .faq-pair'))
       .map(p => ({ q: p.querySelector('.prod-faq-q')?.value.trim() || '', a: p.querySelector('.prod-faq-a')?.value.trim() || '' }))
       .filter(p => p.q || p.a);
+    const faqNode = () => {
+      const f = { "@type": "FAQPage" };
+      if (pageUrl) f["@id"] = pageUrl.replace(/\/$/, '') + '/#faq';
+      f.mainEntity = faqs.map(p => ({ "@type": "Question", name: p.q, acceptedAnswer: { "@type": "Answer", text: p.a } }));
+      return f;
+    };
 
-    // No items yet — show an empty Product shell so the preview isn't blank
-    if (products.length === 0) {
-      const empty = { "@context": "http://schema.org", "@type": "Product", brand };
-      return JSON.stringify(empty, null, 2);
+    const graph = [];
+    if (bizId) graph.push(business);   // standalone business node only when referenced by @id
+
+    if (mode === 'single') {
+      // ── Single product page ──────────────────────────────────────────────
+      const name = v('prod-s-name'), image = v('prod-s-image'), desc = v('prod-s-desc');
+      const sku = v('prod-s-sku'), category = v('prod-s-category');
+      const price = v('prod-s-price'), currency = v('prod-s-currency') || 'USD';
+      const availability = document.getElementById('prod-s-availability')?.value || 'https://schema.org/InStock';
+      const rating = v('prod-s-rating') || '5', ratingCount = v('prod-s-rating-count') || '5';
+
+      const p = { "@type": "Product" };
+      if (name)     p.name        = name;
+      if (image)    p.image       = image;
+      if (desc)     p.description = desc;
+      if (pageUrl)  p.url         = pageUrl;
+      if (sku)      p.sku         = sku;
+      if (category) p.category    = category;
+      // Only emit an offer when a price is set (a currency-only offer is invalid).
+      if (price) p.offers = { "@type": "Offer", ...(pageUrl && { url: pageUrl }), priceCurrency: currency, price, availability };
+      p.aggregateRating = { "@type": "AggregateRating", ratingValue: rating, ratingCount };
+      p.brand = brandRef;
+      graph.push(p);
+    } else {
+      // ── Product hub: CollectionPage → ItemList of products ────────────────
+      const hubName = v('prod-hub-name');
+      const items = Array.from(document.querySelectorAll('#prod-items .prod-item')).map(el => {
+        const q = sel => el.querySelector(sel)?.value.trim() || '';
+        return {
+          name:        q('.prod-name'),
+          image:       q('.prod-image'),
+          desc:        q('.prod-desc'),
+          rating:      q('.prod-rating') || '5',
+          ratingCount: q('.prod-rating-count') || '5'
+        };
+      }).filter(it => it.name || it.desc || it.image);
+
+      const products = items.map(it => {
+        const p = { "@type": "Product" };
+        if (it.name)  p.name        = it.name;
+        if (it.image) p.image       = it.image;
+        if (it.desc)  p.description = it.desc;
+        p.aggregateRating = { "@type": "AggregateRating", ratingValue: it.rating, ratingCount: it.ratingCount };
+        p.brand = brandRef;
+        return p;
+      });
+
+      const collection = { "@type": "CollectionPage" };
+      if (pageUrl) { collection["@id"] = pageUrl.replace(/\/$/, '') + '/#webpage'; collection.url = pageUrl; }
+      if (hubName) collection.name = hubName;
+      collection.mainEntity = {
+        "@type": "ItemList",
+        numberOfItems: products.length,
+        itemListElement: products.map((p, i) => ({ "@type": "ListItem", position: i + 1, item: p }))
+      };
+      graph.push(collection);
     }
 
-    // Single item → a plain Product node (matches the old single-product output)
-    if (products.length === 1) {
-      const single = { "@context": "http://schema.org", ...products[0] };
-      if (faqs.length) return buildGraphWithFAQ(single, faqs, pageUrl);
-      return JSON.stringify(single, null, 2);
-    }
+    if (faqs.length) graph.push(faqNode());
 
-    // Multiple items → combined @graph of Product nodes
-    if (faqs.length) return buildGraphWithFAQ(products, faqs, pageUrl);
-    return JSON.stringify({ "@context": "http://schema.org", "@graph": products }, null, 2);
+    // A lone node with no business reference can be emitted flat; otherwise @graph.
+    if (graph.length === 1) {
+      return JSON.stringify({ "@context": "https://schema.org", ...graph[0] }, null, 2);
+    }
+    return JSON.stringify({ "@context": "https://schema.org", "@graph": graph }, null, 2);
   },
 
   'faq': () => {
