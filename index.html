@@ -1972,7 +1972,10 @@ const generators = {
       p.brand = brandRef;
       graph.push(p);
     } else {
-      // ── Product hub: CollectionPage → ItemList of products ────────────────
+      // ── Product hub: one ProductGroup whose varieties are hasVariant ──────
+      // ProductGroup is a subtype of Product, so validators tag the page as
+      // Product schema (not a list/collection) while keeping the varieties
+      // under a single cohesive entity.
       const hubName = v('prod-hub-name');
       const items = Array.from(document.querySelectorAll('#prod-items .prod-item')).map(el => {
         const q = sel => el.querySelector(sel)?.value.trim() || '';
@@ -1985,7 +1988,7 @@ const generators = {
         };
       }).filter(it => it.name || it.desc || it.image);
 
-      const products = items.map(it => {
+      const variants = items.map(it => {
         const p = { "@type": "Product" };
         if (it.name)  p.name        = it.name;
         if (it.image) p.image       = it.image;
@@ -1995,15 +1998,12 @@ const generators = {
         return p;
       });
 
-      const collection = { "@type": "ProductPage" };
-      if (pageUrl) { collection["@id"] = pageUrl.replace(/\/$/, '') + '/#webpage'; collection.url = pageUrl; }
-      if (hubName) collection.name = hubName;
-      collection.mainEntity = {
-        "@type": "ItemList",
-        numberOfItems: products.length,
-        itemListElement: products.map((p, i) => ({ "@type": "ListItem", position: i + 1, item: p }))
-      };
-      graph.push(collection);
+      const group = { "@type": "ProductGroup" };
+      if (pageUrl) { group["@id"] = pageUrl.replace(/\/$/, '') + '/#product'; group.url = pageUrl; }
+      if (hubName) group.name = hubName;
+      group.brand = brandRef;
+      group.hasVariant = variants;
+      graph.push(group);
     }
 
     if (faqs.length) graph.push(faqNode());
