@@ -614,47 +614,16 @@ const forms = {
 
   'product': () => `
     <div class="section">
-      <div class="section-title">Product Information</div>
-      <div class="field"><label>Product Name <span class="req">*</span></label>
-        <input type="text" id="prod-name" placeholder="e.g. Double-Hung Replacement Window"></div>
-      <div class="field"><label>Image URL</label>
-        <input type="url" id="prod-image" placeholder="https://..."></div>
-      <div class="field"><label>Description <span class="req">*</span></label>
-        <textarea id="prod-desc" rows="3" placeholder="Describe the product..."></textarea></div>
-      <div class="field"><label>Page URL <span class="req">*</span></label>
+      <div class="section-title">Page Info</div>
+      <div class="field"><label>Page URL <span class="req">*</span> <span class="hint">(the single page all items appear on)</span></label>
         <input type="url" id="prod-url" placeholder="https://www.example.com/product-page/"></div>
-      <div class="field-row cols-2">
-        <div class="field"><label>SKU</label>
-          <input type="text" id="prod-sku" placeholder="e.g. WIN-DH-001"></div>
-        <div class="field"><label>Category</label>
-          <input type="text" id="prod-category" placeholder="e.g. Replacement Windows"></div>
-      </div>
+      <div class="field" style="max-width:160px"><label>Price Currency</label>
+        <input type="text" id="prod-currency" value="USD"></div>
     </div>
     <div class="section">
-      <div class="section-title">Offers</div>
-      <div class="field-row cols-2">
-        <div class="field"><label>Price Currency</label>
-          <input type="text" id="prod-currency" value="USD"></div>
-        <div class="field"><label>Price</label>
-          <input type="text" id="prod-price" placeholder="e.g. 0.00"></div>
-      </div>
-      <div class="field"><label>Availability</label>
-        <select id="prod-availability">
-          <option value="https://schema.org/InStock">In Stock</option>
-          <option value="https://schema.org/OutOfStock">Out of Stock</option>
-          <option value="https://schema.org/PreOrder">Pre-Order</option>
-          <option value="https://schema.org/Discontinued">Discontinued</option>
-        </select>
-      </div>
-    </div>
-    <div class="section">
-      <div class="section-title">Rating</div>
-      <div class="field-row cols-2">
-        <div class="field"><label>Rating Value</label>
-          <input type="text" id="prod-rating" value="5"></div>
-        <div class="field"><label>Rating Count</label>
-          <input type="text" id="prod-rating-count" value="5"></div>
-      </div>
+      <div class="section-title">Items <span class="hint">(one block per product on the page — click + Add Item for more)</span></div>
+      <div id="prod-items"></div>
+      <button class="add-btn" id="prod-add-item">+ Add Item</button>
     </div>
     <div class="section">
       <div class="section-title">Brand (Business)</div>
@@ -1177,6 +1146,51 @@ function removePageFAQ(prefix, index) {
   updatePreview();
 }
 
+// ── Product item block (Product tab) HTML + add/remove ────────────────────────
+// Each block is one Product on the page. Multiple blocks are emitted as a
+// combined @graph of Product nodes sharing the same brand/business.
+function prodItemHTML(index) {
+  return `
+    <div class="prod-item" data-index="${index}">
+      <div class="block-header">
+        <span class="block-title">Item ${index + 1}</span>
+        <button class="remove-btn" onclick="removeProdItem(${index})">Remove</button>
+      </div>
+      <div class="field"><label>Product Name <span class="req">*</span></label>
+        <input type="text" class="prod-name" placeholder="e.g. Sympathy Casket Spray"></div>
+      <div class="field"><label>Image URL</label>
+        <input type="url" class="prod-image" placeholder="https://..."></div>
+      <div class="field"><label>Description <span class="req">*</span></label>
+        <textarea class="prod-desc" rows="3" placeholder="Describe the item..."></textarea></div>
+      <div class="field" style="max-width:160px"><label>Price</label>
+        <input type="text" class="prod-price" placeholder="e.g. 199.00"></div>
+      <div class="field-row cols-2">
+        <div class="field"><label>Rating Value</label>
+          <input type="text" class="prod-rating" value="5"></div>
+        <div class="field"><label>Rating Count</label>
+          <input type="text" class="prod-rating-count" value="5"></div>
+      </div>
+    </div>`;
+}
+
+function addProdItem() {
+  const container = document.getElementById('prod-items');
+  const index = container.querySelectorAll('.prod-item').length;
+  container.insertAdjacentHTML('beforeend', prodItemHTML(index));
+}
+
+function removeProdItem(index) {
+  const container = document.getElementById('prod-items');
+  const items = container.querySelectorAll('.prod-item');
+  items[index].remove();
+  container.querySelectorAll('.prod-item').forEach((el, i) => {
+    el.dataset.index = i;
+    el.querySelector('.block-title').textContent = `Item ${i + 1}`;
+    el.querySelector('.remove-btn').setAttribute('onclick', `removeProdItem(${i})`);
+  });
+  updatePreview();
+}
+
 // ── City Page location block HTML ─────────────────────────────────────────────
 // The Location Name field is hidden by default and only shown (via
 // updateCPLocationUI) when there is more than one location.
@@ -1230,8 +1244,10 @@ function renderForm(type) {
     document.getElementById('svc-add-faq').addEventListener('click', () => { addPageFAQ('svc'); updatePreview(); });
     addLocation('svc');
   } else if (type === 'product') {
+    document.getElementById('prod-add-item').addEventListener('click', () => { addProdItem(); updatePreview(); });
     document.getElementById('prod-add-location').addEventListener('click', () => { addLocation('prod'); updatePreview(); });
     document.getElementById('prod-add-faq').addEventListener('click', () => { addPageFAQ('prod'); updatePreview(); });
+    addProdItem();
     addLocation('prod');
   } else if (type === 'faq') {
     document.getElementById('faq-add-pair').addEventListener('click', () => { addFAQPair(); updatePreview(); });
@@ -1525,8 +1541,10 @@ function buildSvcAddressArray(locations) {
 // `node` is the primary schema (its own @context is stripped and hoisted to the
 // graph); `pageUrl` (if present) seeds the FAQPage @id as <pageUrl>/#faq.
 function buildGraphWithFAQ(node, faqs, pageUrl) {
-  const primary = { ...node };
-  delete primary["@context"];
+  // `node` may be a single schema object or an array of them; @context is
+  // stripped from each and hoisted to the graph.
+  const strip = n => { const c = { ...n }; delete c["@context"]; return c; };
+  const primaries = (Array.isArray(node) ? node : [node]).map(strip);
 
   const faqPage = { "@type": "FAQPage" };
   if (pageUrl) faqPage["@id"] = pageUrl.replace(/\/$/, '') + '/#faq';
@@ -1536,7 +1554,7 @@ function buildGraphWithFAQ(node, faqs, pageUrl) {
     acceptedAnswer: { "@type": "Answer", text: p.a }
   }));
 
-  return JSON.stringify({ "@context": "https://schema.org", "@graph": [primary, faqPage] }, null, 2);
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": [...primaries, faqPage] }, null, 2);
 }
 
 // ── Build LocalBusiness schema object ─────────────────────────────────────────
@@ -1846,30 +1864,13 @@ const generators = {
     const locations = getSvcLocations('prod');
     const addresses = buildSvcAddressArray(locations);
 
-    const schema = { "@context": "http://schema.org", "@type": "Product" };
-    const name = v('prod-name'), image = v('prod-image'), desc = v('prod-desc');
-    const pageUrl = v('prod-url'), sku = v('prod-sku'), category = v('prod-category');
-    const currency = v('prod-currency') || 'USD', price = v('prod-price');
-    const availability = document.getElementById('prod-availability')?.value || 'https://schema.org/InStock';
-    const rating = v('prod-rating') || '5', ratingCount = v('prod-rating-count') || '5';
+    const pageUrl = v('prod-url');
+    const currency = v('prod-currency') || 'USD';
+
+    // Shared brand/business — reused by every item on the page
     const bizName = v('prod-biz-name'), bizUrl = v('prod-biz-url'), telephone = v('prod-telephone');
     const priceRange = document.getElementById('prod-price-range')?.value || '$$';
     const logo = v('prod-logo');
-
-    if (name)     schema.name        = name;
-    if (image)    schema.image       = image;
-    if (desc)     schema.description = desc;
-    if (pageUrl)  schema.url         = pageUrl;
-    if (sku)      schema.sku         = sku;
-    if (category) schema.category    = category;
-    schema.offers = {
-      "@type": "Offer",
-      ...(pageUrl && { url: pageUrl }),
-      priceCurrency: currency,
-      ...(price && { price }),
-      availability
-    };
-    schema.aggregateRating = { "@type": "AggregateRating", ratingValue: rating, ratingCount };
     const brand = { "@type": "LocalBusiness" };
     if (bizName)   brand.name       = bizName;
     if (bizUrl)    brand.url        = bizUrl;
@@ -1878,15 +1879,60 @@ const generators = {
     if (addresses.length === 1)    brand.address = addresses[0];
     else if (addresses.length > 1) brand.address = addresses;
     if (telephone) brand.telephone  = telephone;
-    schema.brand = brand;
+
+    // Collect one Product per item block
+    const items = Array.from(document.querySelectorAll('#prod-items .prod-item')).map(el => {
+      const q = sel => el.querySelector(sel)?.value.trim() || '';
+      return {
+        name:        q('.prod-name'),
+        image:       q('.prod-image'),
+        desc:        q('.prod-desc'),
+        price:       q('.prod-price'),
+        rating:      q('.prod-rating') || '5',
+        ratingCount: q('.prod-rating-count') || '5'
+      };
+    }).filter(it => it.name || it.desc || it.image || it.price);
+
+    const buildProduct = it => {
+      const p = { "@type": "Product" };
+      if (it.name)  p.name        = it.name;
+      if (it.image) p.image       = it.image;
+      if (it.desc)  p.description = it.desc;
+      if (pageUrl)  p.url         = pageUrl;
+      p.offers = {
+        "@type": "Offer",
+        ...(pageUrl && { url: pageUrl }),
+        priceCurrency: currency,
+        ...(it.price && { price: it.price })
+      };
+      p.aggregateRating = { "@type": "AggregateRating", ratingValue: it.rating, ratingCount: it.ratingCount };
+      p.brand = brand;
+      return p;
+    };
+
+    const products = items.map(buildProduct);
 
     // Optional FAQ → combined @graph
     const faqs = Array.from(document.querySelectorAll('#prod-faq-pairs .faq-pair'))
       .map(p => ({ q: p.querySelector('.prod-faq-q')?.value.trim() || '', a: p.querySelector('.prod-faq-a')?.value.trim() || '' }))
       .filter(p => p.q || p.a);
-    if (faqs.length) return buildGraphWithFAQ(schema, faqs, pageUrl);
 
-    return JSON.stringify(schema, null, 2);
+    // No items yet — show an empty Product shell so the preview isn't blank
+    if (products.length === 0) {
+      const empty = { "@context": "http://schema.org", "@type": "Product", brand };
+      return JSON.stringify(empty, null, 2);
+    }
+
+    // Single item → a plain Product node (matches the old single-product output)
+    if (products.length === 1) {
+      const single = { "@context": "http://schema.org", ...products[0] };
+      if (faqs.length) return buildGraphWithFAQ(single, faqs, pageUrl);
+      return JSON.stringify(single, null, 2);
+    }
+
+    // Multiple items → combined @graph of Product nodes
+    if (faqs.length) return buildGraphWithFAQ(products, faqs, pageUrl);
+    return JSON.stringify({ "@context": "http://schema.org", "@graph": products }, null, 2);
   },
 
   'faq': () => {
