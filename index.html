@@ -617,8 +617,6 @@ const forms = {
       <div class="section-title">Page Info</div>
       <div class="field"><label>Page URL <span class="req">*</span> <span class="hint">(the single page all items appear on)</span></label>
         <input type="url" id="prod-url" placeholder="https://www.example.com/product-page/"></div>
-      <div class="field" style="max-width:160px"><label>Price Currency</label>
-        <input type="text" id="prod-currency" value="USD"></div>
     </div>
     <div class="section">
       <div class="section-title">Items <span class="hint">(one block per product on the page — click + Add Item for more)</span></div>
@@ -1162,8 +1160,6 @@ function prodItemHTML(index) {
         <input type="url" class="prod-image" placeholder="https://..."></div>
       <div class="field"><label>Description <span class="req">*</span></label>
         <textarea class="prod-desc" rows="3" placeholder="Describe the item..."></textarea></div>
-      <div class="field" style="max-width:160px"><label>Price</label>
-        <input type="text" class="prod-price" placeholder="e.g. 199.00"></div>
       <div class="field-row cols-2">
         <div class="field"><label>Rating Value</label>
           <input type="text" class="prod-rating" value="5"></div>
@@ -1865,7 +1861,6 @@ const generators = {
     const addresses = buildSvcAddressArray(locations);
 
     const pageUrl = v('prod-url');
-    const currency = v('prod-currency') || 'USD';
 
     // Shared brand/business — reused by every item on the page
     const bizName = v('prod-biz-name'), bizUrl = v('prod-biz-url'), telephone = v('prod-telephone');
@@ -1887,11 +1882,10 @@ const generators = {
         name:        q('.prod-name'),
         image:       q('.prod-image'),
         desc:        q('.prod-desc'),
-        price:       q('.prod-price'),
         rating:      q('.prod-rating') || '5',
         ratingCount: q('.prod-rating-count') || '5'
       };
-    }).filter(it => it.name || it.desc || it.image || it.price);
+    }).filter(it => it.name || it.desc || it.image);
 
     const buildProduct = it => {
       const p = { "@type": "Product" };
@@ -1899,12 +1893,6 @@ const generators = {
       if (it.image) p.image       = it.image;
       if (it.desc)  p.description = it.desc;
       if (pageUrl)  p.url         = pageUrl;
-      p.offers = {
-        "@type": "Offer",
-        ...(pageUrl && { url: pageUrl }),
-        priceCurrency: currency,
-        ...(it.price && { price: it.price })
-      };
       p.aggregateRating = { "@type": "AggregateRating", ratingValue: it.rating, ratingCount: it.ratingCount };
       p.brand = brand;
       return p;
