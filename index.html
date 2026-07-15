@@ -1995,7 +1995,7 @@ const generators = {
         return p;
       });
 
-      const collection = { "@type": "CollectionPage" };
+      const collection = { "@type": "ProductPage" };
       if (pageUrl) { collection["@id"] = pageUrl.replace(/\/$/, '') + '/#webpage'; collection.url = pageUrl; }
       if (hubName) collection.name = hubName;
       collection.mainEntity = {
