@@ -524,11 +524,11 @@ const forms = {
     </div>
 
     <div class="section">
-      <div class="section-title">Founder</div>
-      <div class="field"><label>Founder Name</label>
-        <input type="text" id="lb-founder" placeholder="e.g. Jay Smith"></div>
+      <div class="section-title">Owner</div>
+      <div class="field"><label>Owner Name</label>
+        <input type="text" id="lb-owner" placeholder="e.g. Jay Smith"></div>
       <div class="field">
-        <label>Founder Knows About <span class="hint">(productontology.org — auto-fills on vertical/identifier select)</span></label>
+        <label>Owner Knows About <span class="hint">(productontology.org — auto-fills on vertical/identifier select)</span></label>
         <div id="lb-ka-list"></div>
         <button class="add-btn" id="lb-add-ka">+ Add knowsAbout URL</button>
       </div>
@@ -1608,12 +1608,12 @@ function buildGraphWithFAQ(node, faqs, pageUrl) {
 function buildLBSchema(opts) {
   // opts: { name, url, mainPage, id, tel, mapUrl, image, desc, disambig, price,
   //         payment, currency, altNames, addType, identifier, lang, services,
-  //         socialUrls, agent, founder, knowsAbout, foundCity, foundState,
+  //         socialUrls, agent, owner, knowsAbout, foundCity, foundState,
   //         days, opens, closes, locations, mode }
   const {
     name, url, mainPage, schemaId, tel, mapUrl, image, desc, disambig, price,
     payment, currency, altNames, addType, identifier, lang,
-    services, socialUrls, agent, founder, knowsAbout,
+    services, socialUrls, agent, owner, knowsAbout,
     foundCity, foundState, days, opens, closes, locations
   } = opts;
 
@@ -1648,12 +1648,12 @@ function buildLBSchema(opts) {
   if (addresses.length === 1)    schema.address = addresses[0];
   else if (addresses.length > 1) schema.address = addresses;
 
-  // Founder
-  if (founder) {
-    schema.founder = { "@type": "Person", name: founder };
-    if (knowsAbout.length) schema.founder.knowsAbout = knowsAbout;
+  // Owner
+  if (owner) {
+    schema.owns = { "@type": "Person", name: owner };
+    if (knowsAbout.length) schema.owns.knowsAbout = knowsAbout;
     if (foundCity || foundState) {
-      schema.founder.workLocation = {
+      schema.owns.workLocation = {
         "@type": "Place",
         address: {
           "@type": "PostalAddress",
@@ -1769,7 +1769,7 @@ const generators = {
     const servicesRaw = v('lb-services');
     const socialRaw  = v('lb-social');
     const agent      = v('lb-agent');
-    const founder    = v('lb-founder');
+    const owner      = v('lb-owner');
     const foundCity  = v('lb-founding-city');
     const foundState = v('lb-founding-state');
     const opens      = document.getElementById('lb-opens')?.value  || '00:00';
@@ -1785,7 +1785,7 @@ const generators = {
 
     const shared = {
       desc, disambig, price, payment, currency, altNames, addType, identifier, lang,
-      services, socialUrls, agent, founder, knowsAbout, foundCity, foundState,
+      services, socialUrls, agent, owner, knowsAbout, foundCity, foundState,
       days, opens, closes, image
     };
 
