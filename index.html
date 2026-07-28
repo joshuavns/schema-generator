@@ -418,13 +418,14 @@ const forms = {
     <div class="section">
       <div class="section-title">Business Identity</div>
       <div class="field">
-        <label>Load by Vertical <span class="hint">(pre-fills alternate names &amp; identifier below)</span></label>
+        <label>Load by Vertical <span class="hint">(pre-fills alternate names, business type URL &amp; identifier below)</span></label>
         <select id="lb-vertical">
           <option value="">— Select a vertical —</option>
           <option value="funeral">Deathcare — Funeral Homes &amp; Cremation</option>
           <option value="cemetery">Cemetery</option>
           <option value="assisted-living">Assisted Living</option>
-          <option value="home-health">Home Health / Home Care</option>
+          <option value="home-care">In-Home Care (Non-Medical)</option>
+          <option value="home-health">Home Health</option>
           <option value="windows-doors">Windows &amp; Doors</option>
           <option value="window-covering">Window Covering</option>
           <option value="hvac">HVAC &amp; Heating / Cooling</option>
@@ -447,7 +448,8 @@ const forms = {
             <option value="http://www.productontology.org/id/Mortuary">Mortuary</option>
           </optgroup>
           <optgroup label="Senior &amp; Home Care">
-            <option value="http://www.productontology.org/id/Home_care">Home Care Agency</option>
+            <option value="http://www.productontology.org/id/Home_care">Home Care Agency (Non-Medical)</option>
+            <option value="http://www.productontology.org/id/Home_health_nursing">Home Health Agency (Skilled)</option>
             <option value="http://www.productontology.org/id/Assisted_living">Assisted Living Facility</option>
             <option value="http://www.productontology.org/id/Nursing_home_care">Nursing Home</option>
             <option value="http://www.productontology.org/id/Hospice">Hospice</option>
@@ -839,7 +841,8 @@ const forms = {
           <option value="funeral">Deathcare — Funeral Homes &amp; Cremation</option>
           <option value="cemetery">Cemetery</option>
           <option value="assisted-living">Assisted Living</option>
-          <option value="home-health">Home Health / Home Care</option>
+          <option value="home-care">In-Home Care (Non-Medical)</option>
+          <option value="home-health">Home Health</option>
           <option value="windows-doors">Windows &amp; Doors</option>
           <option value="window-covering">Window Covering</option>
           <option value="hvac">HVAC &amp; Heating / Cooling</option>
@@ -2399,22 +2402,35 @@ const orgIndustryPresets = {
       'Medication Management',
     ],
   },
-  'home-health': {
+  // Non-medical assistance with daily living. Keep separate from 'home-health'.
+  'home-care': {
     identifiers: [
       'http://www.productontology.org/id/Home_care',
+      'http://www.productontology.org/id/Elderly_care',
+      'http://www.productontology.org/id/Caregiver',
+      'http://www.productontology.org/id/Respite_care',
+    ],
+    alternateNames: [
+      'Home Care', 'In-Home Care', 'Companion Care', 'Personal Care',
+      'Caregiver Services', 'Respite Care', 'Senior Care', 'Elder Care',
+      'Homemaker Services', 'In-Home Support', 'Live-In Care', '24-Hour Care',
+    ],
+  },
+  // Physician-ordered skilled clinical care. Keep separate from 'home-care'.
+  'home-health': {
+    identifiers: [
       'http://www.productontology.org/id/Home_health_nursing',
-      'http://www.productontology.org/id/Hospice',
-      'http://www.productontology.org/id/Palliative_care',
       'http://www.productontology.org/id/Physical_therapy',
       'http://www.productontology.org/id/Occupational_therapy',
       'http://www.productontology.org/id/Speech-language_pathology',
+      'http://www.productontology.org/id/Palliative_care',
+      'http://www.productontology.org/id/Hospice',
       'http://www.productontology.org/id/Nursing_home_care',
     ],
     alternateNames: [
-      'Home Care', 'Home Health', 'In-Home Care', 'Senior Care',
-      'Skilled Nursing', 'Physical Therapy', 'Occupational Therapy', 'Speech Therapy',
-      'Hospice Care', 'Companion Care', 'Personal Care', 'Home Health Aide',
-      'Palliative Care', 'In-Home Support',
+      'Home Health', 'Home Health Care', 'Skilled Nursing', 'Home Health Aide',
+      'Physical Therapy', 'Occupational Therapy', 'Speech Therapy', 'Wound Care',
+      'Medication Management', 'Hospice Care', 'Palliative Care', 'Post-Acute Care',
     ],
   },
   'windows-doors': {
@@ -2570,12 +2586,32 @@ function applyLBPreset(value) {
     altInput.value = preset.alternateNames.join('\n');
   }
 
+  // Fill Business Type URL (Wikidata additionalType) for this vertical
+  const businessTypeUrlMap = {
+    'funeral':            'https://www.wikidata.org/wiki/Q1466031',  // funeral home
+    'cemetery':           'https://www.wikidata.org/wiki/Q39614',    // cemetery
+    'assisted-living':    'https://www.wikidata.org/wiki/Q315412',   // assisted living facility
+    'home-care':          'https://www.wikidata.org/wiki/Q1642542',  // home care
+    'home-health':        'https://www.wikidata.org/wiki/Q5889061',  // home health nursing
+    'windows-doors':      'https://www.wikidata.org/wiki/Q35473',    // window
+    'window-covering':    'https://www.wikidata.org/wiki/Q3001801',  // window covering
+    'hvac':               'https://www.wikidata.org/wiki/Q1798773',  // heating, ventilation, and air conditioning
+    'roofing-siding':     'https://www.wikidata.org/wiki/Q29585464', // roofing (economic activity)
+    'general-contractor': 'https://www.wikidata.org/wiki/Q289612',   // general contractor
+  };
+  const addTypeUrl = businessTypeUrlMap[value];
+  if (addTypeUrl) {
+    const addTypeInput = document.getElementById('lb-addtype');
+    if (addTypeInput) addTypeInput.value = addTypeUrl;
+  }
+
   // Set identifier select to primary value for this vertical
   const identifierMap = {
     'funeral':            'http://www.productontology.org/id/Funeral_home',
     'cemetery':           'http://www.productontology.org/id/Cemetery',
     'assisted-living':    'http://www.productontology.org/id/Assisted_living',
-    'home-health':        'http://www.productontology.org/id/Home_care',
+    'home-care':          'http://www.productontology.org/id/Home_care',
+    'home-health':        'http://www.productontology.org/id/Home_health_nursing',
     'windows-doors':      'http://www.productontology.org/id/Window',
     'window-covering':    'http://www.productontology.org/id/Window_covering',
     'hvac':               'http://www.productontology.org/id/HVAC',
@@ -2634,7 +2670,8 @@ const identifierSuggestions = {
   'http://www.productontology.org/id/Cremation':     ['http://www.productontology.org/doc/Cremation', 'http://www.productontology.org/doc/Burial'],
   'http://www.productontology.org/id/Cemetery':      ['http://www.productontology.org/doc/Cemetery', 'http://www.productontology.org/doc/Burial'],
   'http://www.productontology.org/id/Mortuary':      ['http://www.productontology.org/doc/Funeral', 'http://www.productontology.org/doc/Cremation', 'http://www.productontology.org/doc/Embalming'],
-  'http://www.productontology.org/id/Home_care':     ['http://www.productontology.org/doc/Home_care'],
+  'http://www.productontology.org/id/Home_care':     ['http://www.productontology.org/doc/Home_care', 'http://www.productontology.org/doc/Elderly_care', 'http://www.productontology.org/doc/Caregiver'],
+  'http://www.productontology.org/id/Home_health_nursing': ['http://www.productontology.org/doc/Home_health_nursing', 'http://www.productontology.org/doc/Physical_therapy', 'http://www.productontology.org/doc/Occupational_therapy'],
   'http://www.productontology.org/id/Assisted_living': ['http://www.productontology.org/doc/Assisted_living', 'http://www.productontology.org/doc/Home_care'],
   'http://www.productontology.org/id/Nursing_home_care': ['http://www.productontology.org/doc/Nursing_home_care', 'http://www.productontology.org/doc/Home_care'],
   'http://www.productontology.org/id/Hospice':       ['http://www.productontology.org/doc/Hospice', 'http://www.productontology.org/doc/Home_care'],
