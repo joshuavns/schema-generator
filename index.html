@@ -725,6 +725,9 @@ const forms = {
           <option value="home-health">Home Health</option>
           <option value="windows-doors">Windows &amp; Doors</option>
           <option value="window-covering">Window Covering</option>
+          <option value="hvac">HVAC &amp; Heating / Cooling</option>
+          <option value="roofing-siding">Roofing &amp; Siding</option>
+          <option value="general-contractor">General Contractor / Home Services</option>
           <option value="cemetery">Cemeteries</option>
         </select>
       </div>
@@ -2325,7 +2328,9 @@ const cpIndustryPresets = {
   },
   'home-health': {
     label: 'Home Health',
-    additionalType: 'https://en.wikipedia.org/wiki/Home_health_care',
+    // /wiki/Home_health_care redirects to /wiki/Home_care, which would collide
+    // with the 'home-care' preset above. Home_health_nursing is the distinct article.
+    additionalType: 'https://en.wikipedia.org/wiki/Home_health_nursing',
     schemaId: 'homehealthcare',
     services: ['Skilled Nursing Care','Physical Therapy','Occupational Therapy','Speech-Language Pathology','Home Health Aide Services','Medical Social Work']
   },
@@ -2340,6 +2345,24 @@ const cpIndustryPresets = {
     additionalType: 'https://en.wikipedia.org/wiki/Window_covering',
     schemaId: 'windowcovering',
     services: ['Custom Blinds','Custom Shades','Custom Shutters','Draperies and Curtains','Motorization','In-Home Consultation','Professional Installation']
+  },
+  'hvac': {
+    label: 'HVAC & Heating / Cooling',
+    additionalType: 'https://en.wikipedia.org/wiki/Heating,_ventilation,_and_air_conditioning',
+    schemaId: 'hvac',
+    services: ['AC Repair','AC Installation','Heating Repair','Furnace Installation','Heat Pump Services','Ductless Mini-Split Systems','Duct Cleaning and Sealing','Indoor Air Quality','Preventive Maintenance Plans','Emergency HVAC Service']
+  },
+  'roofing-siding': {
+    label: 'Roofing & Siding',
+    additionalType: 'https://en.wikipedia.org/wiki/Roofing',
+    schemaId: 'roofingsiding',
+    services: ['Roof Replacement','Roof Repair','Storm and Hail Damage Repair','Shingle Roofing','Metal Roofing','Flat Roofing','Siding Replacement','Siding Repair','Gutter Installation','Roof Inspections']
+  },
+  'general-contractor': {
+    label: 'General Contractor / Home Services',
+    additionalType: 'https://en.wikipedia.org/wiki/General_contractor',
+    schemaId: 'generalcontractor',
+    services: ['Kitchen Remodeling','Bathroom Remodeling','Home Additions','Basement Finishing','Whole-Home Renovation','Custom Home Building','Deck and Patio Construction','Exterior Renovation','Design and Build Services']
   },
   'cemetery': {
     label: 'Cemeteries',
