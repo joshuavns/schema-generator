@@ -1757,18 +1757,7 @@ function buildLBSchema(opts) {
   // potentialAction
   if (services.length || socialUrls.length || agent || name) {
     const action = { "@type": "InteractAction" };
-    // OfferCatalog.name takes a single string, so the service list belongs in
-    // itemListElement. Mirrors the Service tab's hasOfferCatalog structure.
-    if (services.length) {
-      action.result = {
-        "@type": "OfferCatalog",
-        name: name ? `${name} Services` : "Services",
-        itemListElement: services.map(s => ({
-          "@type": "Offer",
-          itemOffered: { "@type": "Service", name: s }
-        }))
-      };
-    }
+    if (services.length) action.result = { "@type": "OfferCatalog", name: services };
     if (agent)           action.agent  = { "@type": "Person", name: agent };
 
     const participant = {};
@@ -1784,9 +1773,7 @@ function buildLBSchema(opts) {
       if (loc.wiki)     geoLinks.push(loc.wiki);
       if (loc.wikidata) geoLinks.push(loc.wikidata);
       if (loc.geonames) geoLinks.push(loc.geonames);
-      // Pass the plain string to encodeURIComponent; pre-writing %2C here would
-      // get its % escaped to %25, producing a double-encoded (broken) link.
-      geoLinks.push(`https://www.google.com/search?q=${encodeURIComponent(`${loc.city}, ${loc.state}`)}`);
+      geoLinks.push(`https://www.google.com/search?q=${encodeURIComponent(loc.city + '%2C+' + loc.state)}`);
       return {
         "@type": "Place",
         address: { "@type": "PostalAddress", addressLocality: loc.city, addressRegion: loc.state },
