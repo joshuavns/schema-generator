@@ -1620,7 +1620,7 @@ function buildLBSchema(opts) {
     name, url, mainPage, schemaId, tel, mapUrl, image, desc, disambig, price,
     payment, currency, altNames, addType, identifier, lang,
     services, socialUrls, agent, owner, knowsAbout,
-    foundCity, foundState, days, opens, closes, locations
+    foundCity, foundState, days, opens, closes, locations, mode
   } = opts;
 
   const schema = { "@context": "https://schema.org", "@type": "LocalBusiness" };
@@ -1653,6 +1653,42 @@ function buildLBSchema(opts) {
 
   if (addresses.length === 1)    schema.address = addresses[0];
   else if (addresses.length > 1) schema.address = addresses;
+
+  // Branch nodes — homepage mode only.
+  // A single LocalBusiness node has one `url` and one `hasMap` slot, both spent
+  // on the homepage, so per-location page URLs and map links had nowhere to go.
+  // schema.org's `department` exists for this case: "a relationship between an
+  // organization and a department of that organization, also described as an
+  // organization (allowing different urls, logos, opening hours)". Each branch
+  // gets its name, url, hasMap, phone, address and geo on one node.
+  // In per-location mode these already become the block's own url/hasMap.
+  if (mode === 'homepage') {
+    const departments = locations.map(loc => {
+      const d = { "@type": "LocalBusiness" };
+      if (loc.url) d["@id"] = loc.url.replace(/\/$/, '') + '#business';
+      if (loc.name)              d.name = loc.name;
+      else if (name && loc.city) d.name = `${name} - ${loc.city}`;
+      if (loc.url)    d.url       = loc.url;
+      if (loc.mapUrl) d.hasMap    = loc.mapUrl;
+      if (loc.phone)  d.telephone = loc.phone;
+
+      const a = { "@type": "PostalAddress" };
+      if (loc.street)  a.streetAddress   = loc.street;
+      if (loc.city)    a.addressLocality = loc.city;
+      if (loc.state)   a.addressRegion   = loc.state;
+      if (loc.zip)     a.postalCode      = loc.zip;
+      if (loc.country) a.addressCountry  = loc.country;
+      if (Object.keys(a).length > 1) d.address = a;
+
+      if (loc.lat && loc.lng) {
+        d.geo = { "@type": "GeoCoordinates", latitude: loc.lat, longitude: loc.lng };
+      }
+      return d;
+    // Only emit a branch node when it carries something the top level can't.
+    }).filter(d => d.url || d.hasMap || d.telephone);
+
+    if (departments.length) schema.department = departments;
+  }
 
   // Owner
   if (owner) {
@@ -1801,7 +1837,7 @@ const generators = {
       const schema = buildLBSchema({
         ...shared,
         name, url: homepageUrl, mainPage: homepageUrl, schemaId,
-        tel, mapUrl, locations
+        tel, mapUrl, locations, mode: 'homepage'
       });
       return JSON.stringify(schema, null, 2);
 
@@ -1822,7 +1858,8 @@ const generators = {
           schemaId,
           tel: locTel,
           mapUrl: locMap,
-          locations: [loc]
+          locations: [loc],
+          mode: 'per-location'
         });
 
         // For per-location: participant uses branch name/url
