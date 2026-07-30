@@ -570,8 +570,6 @@ const forms = {
         <input type="text" id="svc-biz-name" placeholder="e.g. Lake Cook Exteriors, Inc."></div>
       <div class="field"><label>Business Website URL <span class="req">*</span></label>
         <input type="url" id="svc-biz-url" placeholder="https://www.example.com/"></div>
-      <div class="field"><label>Telephone</label>
-        <input type="text" id="svc-telephone" placeholder="e.g. (847) 991-9180"></div>
       <div class="field-row cols-2">
         <div class="field"><label>Price Range</label>
           <select id="svc-price-range">
@@ -1884,7 +1882,7 @@ const generators = {
     const schema = { "@context": "https://schema.org", "@type": "Service" };
     const name = v('svc-name'), image = v('svc-image'), desc = v('svc-desc');
     const pageUrl = v('svc-url'), currency = v('svc-currency') || 'USD', price = v('svc-price') || '$$';
-    const bizName = v('svc-biz-name'), bizUrl = v('svc-biz-url'), telephone = v('svc-telephone');
+    const bizName = v('svc-biz-name'), bizUrl = v('svc-biz-url');
     const priceRange = document.getElementById('svc-price-range')?.value || '$$';
     const logo = v('svc-logo');
 
@@ -1902,9 +1900,9 @@ const generators = {
     if (bizUrl)     provider.url        = bizUrl;
     provider.priceRange = priceRange;
     if (logo)       provider.logo       = logo;
+    // Phone lives on each Location's PostalAddress, not on the provider.
     if (addresses.length === 1)    provider.address = addresses[0];
     else if (addresses.length > 1) provider.address = addresses;
-    if (telephone)  provider.telephone  = telephone;
 
     // hasOfferCatalog
     const catalogName     = v('svc-catalog-name');
@@ -1920,7 +1918,7 @@ const generators = {
         if (subName) {
           const offered = { "@type": catalogItemType, name: subName };
           if (subDesc) offered.description = subDesc;
-          offered.image = subImg;
+          if (subImg)  offered.image       = subImg;
           items.push({ "@type": "Offer", itemOffered: offered });
         }
       });
