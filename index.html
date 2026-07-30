@@ -386,7 +386,7 @@ const forms = {
       <div class="field"><label>Disambiguating Description <span class="hint">(more specific)</span></label>
         <textarea id="lb-disambig" rows="2" placeholder="Detailed description..."></textarea></div>
       <div class="field-row cols-2">
-        <div class="field"><label>Main Phone Number</label>
+        <div class="field"><label>Main Phone Number <span class="hint">(optional — uses Location 1's phone if blank)</span></label>
           <input type="text" id="lb-tel" placeholder="(555) 123-4567"></div>
         <div class="field"><label>Price Range</label>
           <select id="lb-price">
@@ -1823,6 +1823,12 @@ const generators = {
     const knowsAbout = Array.from(document.querySelectorAll('#lb-ka-list .lb-ka-url')).map(i => i.value.trim()).filter(Boolean);
     const locations  = getLBLocations();
 
+    // Main Phone Number is optional: when blank, inherit the first location's
+    // phone so the number isn't typed twice. An explicit value still wins, which
+    // is how a central call-center number differing from the branch phones gets
+    // set. Per-location mode already does this per block (`loc.phone || tel`).
+    const mainTel    = tel || locations.find(l => l.phone)?.phone || '';
+
     const shared = {
       desc, disambig, price, payment, currency, altNames, addType, identifier, lang,
       services, socialUrls, agent, owner, knowsAbout, foundCity, foundState,
@@ -1835,7 +1841,7 @@ const generators = {
       const schema = buildLBSchema({
         ...shared,
         name, url: homepageUrl, mainPage: homepageUrl, schemaId,
-        tel, mapUrl, locations, mode: 'homepage'
+        tel: mainTel, mapUrl, locations, mode: 'homepage'
       });
       return JSON.stringify(schema, null, 2);
 
