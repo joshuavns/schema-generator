@@ -590,12 +590,6 @@ const forms = {
       <button class="add-btn" id="svc-add-location">+ Add Location</button>
     </div>
     <div class="section">
-      <div class="section-title">Areas Served <span class="hint">(optional)</span></div>
-      <div class="info-note" style="margin-bottom:12px;">Where the service is <em>sold</em>, which is not always where the business <em>sits</em>. One city per line. Add the state after a comma (<code>Monterey, CA</code>) and it becomes <code>containedInPlace</code>. Leave empty to omit <code>areaServed</code>.</div>
-      <div class="field"><label>Cities</label>
-        <textarea id="svc-areas" rows="4" placeholder="Monterey, CA&#10;Santa Cruz, CA&#10;Capitola, CA"></textarea></div>
-    </div>
-    <div class="section">
       <div class="section-title">Offer Catalog</div>
       <div class="info-note" style="margin-bottom:12px;">Adds a <code>hasOfferCatalog</code> to either the Service or the Provider. Leave empty to omit.</div>
       <div class="field-row cols-3">
@@ -1917,18 +1911,6 @@ const generators = {
     if (image)       schema.image       = image;
     if (desc)        schema.description = desc;
 
-    // areaServed — a City `name` is the city alone, never "City, ST"; anything
-    // after the comma becomes containedInPlace.
-    const areas = v('svc-areas').split('\n').map(s => s.trim()).filter(Boolean);
-    if (areas.length) {
-      const cities = areas.map(a => {
-        const [city, region] = a.split(',').map(s => s.trim());
-        const node = { "@type": "City", name: city };
-        if (region) node.containedInPlace = { "@type": "State", name: region };
-        return node;
-      });
-      schema.areaServed = cities.length === 1 ? cities[0] : cities;
-    }
     schema.offers = {
       "@type": "Offer",
       ...(pageUrl && { url: pageUrl }),
