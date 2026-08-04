@@ -435,10 +435,11 @@ const forms = {
       </div>
       <div class="field"><label>Alternate Names <span class="hint">(one per line; other names for THIS business &mdash; DBAs, former names, abbreviations. Not service or industry terms)</span></label>
         <textarea id="lb-altnames" rows="3" placeholder="Heffner Funeral Homes&#10;Heffner Care&#10;(former name, DBA, or common short form)"></textarea></div>
-      <div class="field"><label>Business Type URL <span class="hint">(Wikidata additionalType)</span></label>
-        <input type="url" id="lb-addtype" placeholder="https://www.wikidata.org/wiki/Q1466031"></div>
+      <div class="field"><label>Business Type URLs <span class="hint">(Wikidata additionalType &mdash; add one per type the client actually is, e.g. funeral home <em>and</em> crematorium)</span></label>
+        <div id="lb-addtype-list"></div>
+        <button class="add-btn" id="lb-add-addtype">+ Add Business Type URL</button></div>
       <div class="field">
-        <label>Business Identifier <span class="hint">(productontology — select closest match)</span></label>
+        <label>Business Identifiers <span class="hint">(productontology &mdash; pick from the list to add a row; add as many as apply)</span></label>
         <select id="lb-identifier">
           <option value="">— Select industry —</option>
           <optgroup label="Funeral &amp; Death Care">
@@ -484,7 +485,9 @@ const forms = {
         </select>
         <div class="identifier-custom" id="lb-identifier-custom-wrap" style="display:none">
           <input type="url" id="lb-identifier-custom" placeholder="http://www.productontology.org/id/...">
+          <button class="add-btn" id="lb-add-identifier-custom">+ Add this URL</button>
         </div>
+        <div id="lb-identifier-list"></div>
       </div>
       <div class="field"><label>Knows Language</label>
         <input type="text" id="lb-lang" value="en"></div>
@@ -1282,6 +1285,16 @@ function renderForm(type) {
       updatePreview();
     });
     document.getElementById('lb-add-ka').addEventListener('click', () => { addLBKaRow(); updatePreview(); });
+    document.getElementById('lb-add-addtype').addEventListener('click', () => { addLBAddTypeRow(); updatePreview(); });
+    document.getElementById('lb-add-identifier-custom').addEventListener('click', () => {
+      const input = document.getElementById('lb-identifier-custom');
+      const url = input?.value.trim();
+      if (!url) return;
+      addLBIdentifierRow(url);
+      input.value = '';
+      updatePreview();
+    });
+    addLBAddTypeRow();   // start with one empty row so the field isn't just a button
     document.getElementById('lb-mode-toggle').addEventListener('click', e => {
       const btn = e.target.closest('.mode-btn');
       if (!btn) return;
@@ -1345,6 +1358,25 @@ function renderForm(type) {
   panel.addEventListener('input', updatePreview);
   panel.addEventListener('change', updatePreview);
 }
+
+// ── Local Business additionalType / identifier row helpers ───────────────────
+// Both properties are arrays in schema.org and a client is often more than one
+// thing — a funeral home that also operates a crematorium needs the Wikidata
+// entry for each (QA request, 2026-08-05). The vertical preset fills the first
+// row; further rows are added by hand.
+function addLBRow(listId, cls, url = '', placeholder = '') {
+  const list = document.getElementById(listId);
+  if (!list) return;
+  list.insertAdjacentHTML('beforeend',
+    `<div class="org-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">` +
+    `<input type="url" class="${cls}" value="${url}" placeholder="${placeholder}" style="flex:1" oninput="updatePreview()">` +
+    `<button class="remove-btn" onclick="this.closest('.org-row').remove();updatePreview()">Remove</button>` +
+    `</div>`);
+}
+const addLBAddTypeRow    = (url = '') =>
+  addLBRow('lb-addtype-list', 'lb-addtype-url', url, 'https://www.wikidata.org/wiki/Q1466031');
+const addLBIdentifierRow = (url = '') =>
+  addLBRow('lb-identifier-list', 'lb-identifier-url', url, 'http://www.productontology.org/id/...');
 
 // ── Local Business knowsAbout row helper ─────────────────────────────────────
 function addLBKaRow(url = '') {
@@ -1647,12 +1679,12 @@ function buildGraphWithFAQ(node, faqs, pageUrl) {
 // ── Build LocalBusiness schema object ─────────────────────────────────────────
 function buildLBSchema(opts) {
   // opts: { name, url, mainPage, id, tel, mapUrl, image, desc, disambig, price,
-  //         payment, currency, altNames, addType, identifier, lang, services,
+  //         payment, currency, altNames, addTypes, identifiers, lang, services,
   //         socialUrls, agent, owner, knowsAbout, foundCity, foundState,
   //         days, opens, closes, locations, mode }
   const {
     name, url, mainPage, schemaId, tel, mapUrl, image, desc, disambig, price,
-    payment, currency, altNames, addType, identifier, lang,
+    payment, currency, altNames, addTypes, identifiers, lang,
     services, socialUrls, agent, owner, knowsAbout,
     foundCity, foundState, days, opens, closes, locations, mode
   } = opts;
@@ -1721,8 +1753,8 @@ function buildLBSchema(opts) {
 
   if (schemaId) schema["@id"] = schemaId;
   if (name)     schema.name   = name;
-  if (addType)  schema.additionalType = [addType];
-  if (identifier) schema.identifier  = [identifier];
+  if (addTypes.length)    schema.additionalType = addTypes;
+  if (identifiers.length) schema.identifier     = identifiers;
   if (altNames.length) schema.alternateName = altNames;
   if (url)      { schema.url = url; schema.mainEntityOfPage = mainPage || url; }
   if (image)    schema.image = [image];
@@ -1751,7 +1783,9 @@ function buildLBSchema(opts) {
     // intentionally empty — see the shape note above
   } else if (isHome) {
     if (mainLoc) {
-      schema.address    = postalAddress(mainLoc);
+      // Single-location homepage carries the city links on its address too, the
+      // same as each branch does in the multi shape.
+      schema.address    = postalAddress(mainLoc, true);
       const mainGeo     = geoOf(mainLoc);
       const mainCircle  = circleOf(mainLoc);
       if (mainGeo)    schema.geo        = mainGeo;
@@ -1806,12 +1840,17 @@ function buildLBSchema(opts) {
     if (departments.length) schema.department = departments;
   }
 
-  // Owner
+  // Owner. `owner` is what both of QA's reviewed samples use (2026-08-04) and
+  // the multi-location one passed both validators, so the property is accepted.
+  // Was `owns`, whose schema.org range is OwnershipInfo/Product rather than a
+  // Person. Note the 2025 SOP specifies `founder` — three variants have been in
+  // circulation and QA's samples are the newest, so they win until told
+  // otherwise.
   if (owner) {
-    schema.owns = { "@type": "Person", name: owner };
-    if (knowsAbout.length) schema.owns.knowsAbout = knowsAbout;
+    schema.owner = { "@type": "Person", name: owner };
+    if (knowsAbout.length) schema.owner.knowsAbout = knowsAbout;
     if (foundCity || foundState) {
-      schema.owns.workLocation = {
+      schema.owner.workLocation = {
         "@type": "Place",
         address: {
           "@type": "PostalAddress",
@@ -1856,10 +1895,12 @@ function buildLBSchema(opts) {
     else if (geoCircles.length > 1) schema.areaServed = geoCircles;
   }
 
-  // contactPoint — one per location. Dropped in the multi-location shape: every
-  // branch's name, phone and city are already on its department node, and for a
-  // LocalBusiness Google reads `telephone`, not `contactPoint`.
-  if (!multiHome) {
+  // contactPoint — one per location. Dropped in BOTH homepage shapes (QA's
+  // single- and multi-location samples, 2026-08-04): the name, phone and city
+  // are already on the parent or its departments, and for a LocalBusiness Google
+  // reads `telephone`, not `contactPoint`. Per-location mode keeps it, matching
+  // the SOP's per-branch template.
+  if (!isHome) {
     const contactPoints = locations.filter(l => l.phone || l.name).map(loc => ({
       "@type": "ContactPoint",
       ...(loc.name  && { name: loc.name }),
@@ -1892,9 +1933,9 @@ function buildLBSchema(opts) {
     // and then ran the whole string through encodeURIComponent, escaping the
     // `%` to `%25`, so every link was broken. Typing it keeps the SOP's exact
     // value instead of reassembling it.
-    // Dropped in the multi-location shape: the links ride on each branch's
-    // address there, so a Place per city would restate every city a third time.
-    if (!multiHome) {
+    // Dropped in BOTH homepage shapes: the links ride on the address there, so a
+    // Place per city would restate every city again. Per-location mode keeps it.
+    if (!isHome) {
       const actionLocations = locations.filter(l => l.city && l.state).map(loc => {
         const geoLinks = [loc.wiki, loc.wikidata, loc.geonames, loc.google].filter(Boolean);
         const place = {
@@ -1930,9 +1971,12 @@ const generators = {
     const mapUrl     = v('lb-map');
     const image      = v('lb-image');
     const altNamesRaw = v('lb-altnames');
-    const addType    = v('lb-addtype');
-    const identifierSel = document.getElementById('lb-identifier')?.value || '';
-    const identifier = identifierSel === '__custom__' ? v('lb-identifier-custom') : identifierSel;
+    // additionalType and identifier are both arrays: a client can legitimately be
+    // several things at once (funeral home + crematorium).
+    const addTypes    = Array.from(document.querySelectorAll('#lb-addtype-list .lb-addtype-url'))
+      .map(i => i.value.trim()).filter(Boolean);
+    const identifiers = Array.from(document.querySelectorAll('#lb-identifier-list .lb-identifier-url'))
+      .map(i => i.value.trim()).filter(Boolean);
     const lang       = v('lb-lang') || 'en';
     const servicesRaw = v('lb-services');
     const socialRaw  = v('lb-social');
@@ -1955,7 +1999,7 @@ const generators = {
     // buildLBSchema, which knows which block is the main location; per-location
     // mode does it per block below (`loc.phone || tel`).
     const shared = {
-      desc, disambig, price, payment, currency, altNames, addType, identifier, lang,
+      desc, disambig, price, payment, currency, altNames, addTypes, identifiers, lang,
       services, socialUrls, agent, owner, knowsAbout, foundCity, foundState,
       days, opens, closes, image
     };
@@ -2802,10 +2846,14 @@ function applyLBPreset(value) {
     'roofing-siding':     'https://www.wikidata.org/wiki/Q29585464', // roofing (economic activity)
     'general-contractor': 'https://www.wikidata.org/wiki/Q289612',   // general contractor
   };
+  // The preset seeds the FIRST row only. A client that is more than one thing
+  // (funeral home + crematorium) gets the extra Wikidata entries added by hand;
+  // the tool can't know which apply.
   const addTypeUrl = businessTypeUrlMap[value];
-  if (addTypeUrl) {
-    const addTypeInput = document.getElementById('lb-addtype');
-    if (addTypeInput) addTypeInput.value = addTypeUrl;
+  const addTypeList = document.getElementById('lb-addtype-list');
+  if (addTypeUrl && addTypeList) {
+    addTypeList.innerHTML = '';
+    addLBAddTypeRow(addTypeUrl);
   }
 
   // Set identifier select to primary value for this vertical
@@ -2823,8 +2871,15 @@ function applyLBPreset(value) {
   };
   const identifierVal = identifierMap[value];
   if (identifierVal) {
+    // Seeds the first identifier row. The dropdown stays empty because it's a
+    // picker for adding more, not the value itself.
+    const idList = document.getElementById('lb-identifier-list');
+    if (idList) {
+      idList.innerHTML = '';
+      addLBIdentifierRow(identifierVal);
+    }
     const sel = document.getElementById('lb-identifier');
-    if (sel) sel.value = identifierVal;
+    if (sel) sel.value = '';
     // Fill knowsAbout rows from identifierSuggestions
     const kaList = document.getElementById('lb-ka-list');
     if (kaList) {
@@ -2901,11 +2956,22 @@ document.addEventListener('change', e => {
     // Show/hide custom input
     const wrap = document.getElementById('lb-identifier-custom-wrap');
     if (wrap) wrap.style.display = val === '__custom__' ? '' : 'none';
-    // Fill knowsAbout rows from identifierSuggestions
-    const kaList = document.getElementById('lb-ka-list');
-    if (kaList) {
-      kaList.innerHTML = '';
-      (identifierSuggestions[val] || []).forEach(url => addLBKaRow(url));
+    // The dropdown is a picker now, not the value itself: choosing an entry adds
+    // a row and resets, so several identifiers can be selected in turn. Skips
+    // anything already in the list rather than adding a duplicate.
+    if (val && val !== '__custom__') {
+      const existing = Array.from(document.querySelectorAll('#lb-identifier-list .lb-identifier-url'))
+        .map(i => i.value.trim());
+      if (!existing.includes(val)) addLBIdentifierRow(val);
+      e.target.value = '';
+      // knowsAbout suggestions follow the identifier that was just picked.
+      const kaList = document.getElementById('lb-ka-list');
+      if (kaList) {
+        (identifierSuggestions[val] || []).forEach(url => {
+          const have = Array.from(kaList.querySelectorAll('.lb-ka-url')).map(i => i.value.trim());
+          if (!have.includes(url)) addLBKaRow(url);
+        });
+      }
     }
     updatePreview();
   }
