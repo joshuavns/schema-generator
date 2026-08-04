@@ -433,8 +433,8 @@ const forms = {
           <option value="general-contractor">General Contractor / Home Services</option>
         </select>
       </div>
-      <div class="field"><label>Alternate Names <span class="hint">(one per line)</span></label>
-        <textarea id="lb-altnames" rows="3" placeholder="funeral home&#10;funeral parlor&#10;mortuary&#10;crematory"></textarea></div>
+      <div class="field"><label>Alternate Names <span class="hint">(one per line; other names for THIS business &mdash; DBAs, former names, abbreviations. Not service or industry terms)</span></label>
+        <textarea id="lb-altnames" rows="3" placeholder="Heffner Funeral Homes&#10;Heffner Care&#10;(former name, DBA, or common short form)"></textarea></div>
       <div class="field"><label>Business Type URL <span class="hint">(Wikidata additionalType)</span></label>
         <input type="url" id="lb-addtype" placeholder="https://www.wikidata.org/wiki/Q1466031"></div>
       <div class="field">
@@ -1040,8 +1040,8 @@ function locationBlockHTML(prefix, index) {
             <input type="text" class="lb-loc-lat" placeholder="41.99"></div>
           <div class="field"><label>Longitude</label>
             <input type="text" class="lb-loc-lng" placeholder="-87.74"></div>
-          <div class="field"><label>Radius (meters)</label>
-            <input type="text" class="lb-loc-radius" value="16093.4"></div>
+          <div class="field"><label>Radius (meters) <span class="hint">(optional; blank = no GeoCircle)</span></label>
+            <input type="text" class="lb-loc-radius" placeholder="16093.4 = 10 miles"></div>
         </div>
       </div>
 
@@ -1053,6 +1053,8 @@ function locationBlockHTML(prefix, index) {
           <input type="url" class="lb-loc-wikidata" placeholder="https://www.wikidata.org/wiki/Q1297"></div>
         <div class="field"><label>GeoNames URL</label>
           <input type="url" class="lb-loc-geonames" placeholder="https://www.geonames.org/4887398/chicago.html"></div>
+        <div class="field"><label>Google Search Link <span class="hint">(SOP format: ?q=City%2C+State)</span></label>
+          <input type="url" class="lb-loc-google" placeholder="https://www.google.com/search?q=Chicago%2C+IL"></div>
       </div>
       ` : ''}
     </div>`;
@@ -1274,7 +1276,11 @@ function renderForm(type) {
   panel.innerHTML = forms[type]();
 
   if (type === 'local-business') {
-    document.getElementById('lb-vertical').addEventListener('change', e => { applyLBPreset(e.target.value); });
+    document.getElementById('lb-vertical').addEventListener('change', e => {
+      applyLBPreset(e.target.value);
+      updateLBRadiusUI();
+      updatePreview();
+    });
     document.getElementById('lb-add-ka').addEventListener('click', () => { addLBKaRow(); updatePreview(); });
     document.getElementById('lb-mode-toggle').addEventListener('click', e => {
       const btn = e.target.closest('.mode-btn');
@@ -1389,6 +1395,31 @@ function addLocation(prefix) {
   const index = container.querySelectorAll('.location-block').length;
   const html = (prefix === 'lb') ? locationBlockHTML(prefix, index) : serviceLocationHTML(prefix, index);
   container.insertAdjacentHTML('beforeend', html);
+  if (prefix === 'lb') updateLBRadiusUI();
+}
+
+// Verticals whose clients are storefront businesses customers travel TO. A
+// service-radius GeoCircle is the wrong property for them: `areaServed` is meant
+// for service-area businesses that have no premises to visit, and a radius
+// nobody researched is invented data in the client's markup. Hiding the field
+// keeps it out; a blank radius already means no GeoCircle is emitted.
+const NO_RADIUS_VERTICALS = ['funeral'];
+
+function updateLBRadiusUI() {
+  const vertical = document.getElementById('lb-vertical')?.value || '';
+  const hide = NO_RADIUS_VERTICALS.includes(vertical);
+  document.querySelectorAll('#lb-locations .lb-loc-radius').forEach(input => {
+    const field = input.closest('.field');
+    const row   = input.closest('.field-row');
+    if (!field) return;
+    field.style.display = hide ? 'none' : '';
+    // Keep the lat/lng row balanced once the third column is gone.
+    if (row) {
+      row.classList.toggle('cols-3', !hide);
+      row.classList.toggle('cols-2', hide);
+    }
+    if (hide) input.value = '';
+  });
 }
 
 function removeLocation(prefix, index) {
@@ -1562,6 +1593,7 @@ function getLBLocations() {
     wiki:     b.querySelector('.lb-loc-wiki')?.value.trim()     || '',
     wikidata: b.querySelector('.lb-loc-wikidata')?.value.trim() || '',
     geonames: b.querySelector('.lb-loc-geonames')?.value.trim() || '',
+    google:   b.querySelector('.lb-loc-google')?.value.trim()   || '',
   }));
 }
 
@@ -1625,6 +1657,66 @@ function buildLBSchema(opts) {
     foundCity, foundState, days, opens, closes, locations, mode
   } = opts;
 
+  const isHome = mode === 'homepage';
+
+  // Shared shape builders. The same PostalAddress / GeoCoordinates / GeoCircle
+  // objects are needed by the parent node and by every branch, so they're built
+  // in one place rather than repeated per caller.
+  const postalAddress = (loc, withGeoLinks) => {
+    const a = { "@type": "PostalAddress" };
+    if (loc.street)  a.streetAddress   = loc.street;
+    if (loc.city)    a.addressLocality = loc.city;
+    if (loc.state)   a.addressRegion   = loc.state;
+    if (loc.zip)     a.postalCode      = loc.zip;
+    if (loc.country) a.addressCountry  = loc.country;
+    if (Object.keys(a).length <= 1) return null;
+    // QA's multi-location shape hangs the city reference links off the branch
+    // address instead of a separate potentialAction Place, which is what lets
+    // `potentialAction.location[]` go away without losing the links.
+    if (withGeoLinks) {
+      const links = [loc.wiki, loc.wikidata, loc.geonames, loc.google].filter(Boolean);
+      if (links.length) a.sameAs = links;
+    }
+    return a;
+  };
+  const geoOf = loc => (loc.lat && loc.lng)
+    ? { "@type": "GeoCoordinates", latitude: loc.lat, longitude: loc.lng }
+    : null;
+  // A GeoCircle only says something `geo` doesn't once it has a radius: with no
+  // radius it's a point with no area, which `geo` already states.
+  const circleOf = loc => (loc.lat && loc.lng && loc.radius)
+    ? {
+        "@type": "GeoCircle",
+        geoMidpoint: { "@type": "GeoCoordinates", latitude: loc.lat, longitude: loc.lng },
+        geoRadius: loc.radius
+      }
+    : null;
+
+  // Homepage mode has two shapes, split on how many locations there are.
+  //
+  // 2+ locations — QA's reviewed shape (2026-08-04): every branch is a
+  // `department` carrying its own name, phone, address, map and coordinates, and
+  // the parent drops the location-level properties entirely (no address, phone,
+  // hasMap, geo or areaServed). `contactPoint[]` and `potentialAction.location[]`
+  // go too, since the departments and the address `sameAs` now hold that data.
+  //
+  // 1 location — untouched. The homepage IS the location for a single-site
+  // client, so the parent keeps everything and no `department[]` is emitted;
+  // wrapping the only location in a "department" would describe a business that
+  // has none. The threshold sits at 2+ because that is exactly when
+  // `department[]` appears, which is the situation QA reviewed.
+  //
+  // Blocks with no address don't count toward the threshold, so a stray empty
+  // location block can't flip a single-location client into the multi shape.
+  const placed    = locations.filter(l => l.street || l.city || l.zip);
+  const multiHome = isHome && placed.length >= 2;
+
+  // Single-location homepage only: which block fills the parent node. The first
+  // location with a real address wins, so a blank leading block can't hand the
+  // parent an empty one.
+  const mainIdx = (isHome && !multiHome) ? locations.findIndex(l => l.street || l.city || l.zip) : -1;
+  const mainLoc = mainIdx >= 0 ? locations[mainIdx] : null;
+
   const schema = { "@context": "https://schema.org", "@type": "LocalBusiness" };
 
   if (schemaId) schema["@id"] = schemaId;
@@ -1639,22 +1731,37 @@ function buildLBSchema(opts) {
   schema.currenciesAccepted = currency;
   if (desc)     schema.description = desc;
   if (disambig) schema.disambiguatingDescription = disambig;
-  if (mapUrl)   schema.hasMap      = mapUrl;
-  if (tel)      schema.telephone   = tel;
 
-  // Address — no telephone in LB address objects
-  const addresses = locations.map(loc => {
-    const a = { "@type": "PostalAddress" };
-    if (loc.street)  a.streetAddress   = loc.street;
-    if (loc.city)    a.addressLocality  = loc.city;
-    if (loc.state)   a.addressRegion    = loc.state;
-    if (loc.zip)     a.postalCode       = loc.zip;
-    if (loc.country) a.addressCountry   = loc.country;
-    return a;
-  }).filter(a => Object.keys(a).length > 1);
+  // Map link and phone both fall back to the main location's, so neither has to
+  // be typed twice. An explicit top-level value still wins, which is how a
+  // central call-center number differing from the branch phones gets set.
+  // Suppressed entirely in the multi-location shape: the parent describes the
+  // company there, not a place, so a phone or map link on it would belong to a
+  // branch and read as the company's own.
+  const resolvedMap = multiHome ? '' : (mapUrl || (isHome ? mainLoc?.mapUrl : '') || '');
+  const resolvedTel = multiHome ? '' : (tel    || (isHome ? mainLoc?.phone  : '') || '');
+  if (resolvedMap) schema.hasMap    = resolvedMap;
+  if (resolvedTel) schema.telephone = resolvedTel;
 
-  if (addresses.length === 1)    schema.address = addresses[0];
-  else if (addresses.length > 1) schema.address = addresses;
+  // Address — no telephone in LB address objects.
+  // Multi-location homepage: nothing here; every address is on its department.
+  // Single-location homepage: the one location fills the parent.
+  // Per-location mode: unchanged, since those blocks have no departments.
+  if (multiHome) {
+    // intentionally empty — see the shape note above
+  } else if (isHome) {
+    if (mainLoc) {
+      schema.address    = postalAddress(mainLoc);
+      const mainGeo     = geoOf(mainLoc);
+      const mainCircle  = circleOf(mainLoc);
+      if (mainGeo)    schema.geo        = mainGeo;
+      if (mainCircle) schema.areaServed = mainCircle;
+    }
+  } else {
+    const addresses = locations.map(postalAddress).filter(Boolean);
+    if (addresses.length === 1)    schema.address = addresses[0];
+    else if (addresses.length > 1) schema.address = addresses;
+  }
 
   // Branch nodes — homepage mode only.
   // A single LocalBusiness node has one `url` and one `hasMap` slot, both spent
@@ -1664,8 +1771,12 @@ function buildLBSchema(opts) {
   // organization (allowing different urls, logos, opening hours)". Each branch
   // gets its name, url, hasMap, phone, address and geo on one node.
   // In per-location mode these already become the block's own url/hasMap.
-  if (mode === 'homepage') {
-    const departments = locations.map(loc => {
+  if (isHome) {
+    const departments = locations.map((loc, i) => {
+      // Single-location shape: the one location IS the parent, so it is not
+      // also a department. Multi shape: every branch gets a node, main included.
+      if (!multiHome && i === mainIdx) return null;
+
       const d = { "@type": "LocalBusiness" };
       if (loc.url) d["@id"] = loc.url.replace(/\/$/, '') + '#business';
       if (loc.name)              d.name = loc.name;
@@ -1674,20 +1785,23 @@ function buildLBSchema(opts) {
       if (loc.mapUrl) d.hasMap    = loc.mapUrl;
       if (loc.phone)  d.telephone = loc.phone;
 
-      const a = { "@type": "PostalAddress" };
-      if (loc.street)  a.streetAddress   = loc.street;
-      if (loc.city)    a.addressLocality = loc.city;
-      if (loc.state)   a.addressRegion   = loc.state;
-      if (loc.zip)     a.postalCode      = loc.zip;
-      if (loc.country) a.addressCountry  = loc.country;
-      if (Object.keys(a).length > 1) d.address = a;
+      // Multi shape carries the city reference links on the branch address.
+      const a = postalAddress(loc, multiHome);
+      if (a) d.address = a;
 
-      if (loc.lat && loc.lng) {
-        d.geo = { "@type": "GeoCoordinates", latitude: loc.lat, longitude: loc.lng };
-      }
+      // The service radius travels with the branch it belongs to. A GeoCircle
+      // needs its own midpoint, so the coordinates appear twice inside the node:
+      // `geo` is where the branch is, `areaServed` is how far out they serve.
+      const g = geoOf(loc);
+      const c = circleOf(loc);
+      if (g) d.geo        = g;
+      if (c) d.areaServed = c;
+
       return d;
-    // Only emit a branch node when it carries something the top level can't.
-    }).filter(d => d.url || d.hasMap || d.telephone);
+    // Only emit a branch node when it carries something the parent can't.
+    // `address` counts in the multi shape — it's the whole point there, and the
+    // parent no longer holds one.
+    }).filter(d => d && (d.url || d.hasMap || d.telephone || d.geo || (multiHome && d.address)));
 
     if (departments.length) schema.department = departments;
   }
@@ -1731,30 +1845,32 @@ function buildLBSchema(opts) {
     };
   }
 
-  // areaServed — GeoCircle per location
-  const geoCircles = locations.filter(l => l.lat && l.lng).map(loc => ({
-    "@type": "GeoCircle",
-    geoMidpoint: {
-      "@type": "GeoCoordinates",
-      latitude:  loc.lat,
-      longitude: loc.lng
-    },
-    ...(loc.radius && { geoRadius: loc.radius })
-  }));
-  if (geoCircles.length === 1)    schema.areaServed = geoCircles[0];
-  else if (geoCircles.length > 1) schema.areaServed = geoCircles;
+  // areaServed — GeoCircle per location. Per-location mode only: in homepage
+  // mode each branch now carries its own GeoCircle on its `department` node, so
+  // a top-level copy of every branch's circle is pure repetition (QA,
+  // 2026-08-04). A per-location block has one location and no departments, so
+  // the circle belongs at the top level there.
+  if (!isHome) {
+    const geoCircles = locations.map(circleOf).filter(Boolean);
+    if (geoCircles.length === 1)    schema.areaServed = geoCircles[0];
+    else if (geoCircles.length > 1) schema.areaServed = geoCircles;
+  }
 
-  // contactPoint — one per location
-  const contactPoints = locations.filter(l => l.phone || l.name).map(loc => ({
-    "@type": "ContactPoint",
-    ...(loc.name  && { name: loc.name }),
-    availableLanguage: lang || 'en',
-    ...(loc.phone && { telephone: loc.phone }),
-    ...(loc.city && loc.state && { areaServed: [`${loc.city}, ${loc.state}`] }),
-    contactType: ["Customer Support"]
-  }));
-  if (contactPoints.length === 1)    schema.contactPoint = contactPoints[0];
-  else if (contactPoints.length > 1) schema.contactPoint = contactPoints;
+  // contactPoint — one per location. Dropped in the multi-location shape: every
+  // branch's name, phone and city are already on its department node, and for a
+  // LocalBusiness Google reads `telephone`, not `contactPoint`.
+  if (!multiHome) {
+    const contactPoints = locations.filter(l => l.phone || l.name).map(loc => ({
+      "@type": "ContactPoint",
+      ...(loc.name  && { name: loc.name }),
+      availableLanguage: lang || 'en',
+      ...(loc.phone && { telephone: loc.phone }),
+      ...(loc.city && loc.state && { areaServed: [`${loc.city}, ${loc.state}`] }),
+      contactType: ["Customer Support"]
+    }));
+    if (contactPoints.length === 1)    schema.contactPoint = contactPoints[0];
+    else if (contactPoints.length > 1) schema.contactPoint = contactPoints;
+  }
 
   // potentialAction
   if (services.length || socialUrls.length || agent || name) {
@@ -1770,20 +1886,28 @@ function buildLBSchema(opts) {
       action.participant = { "@type": "Organization", ...participant };
     }
 
-    const actionLocations = locations.filter(l => l.city && l.state).map(loc => {
-      const geoLinks = [];
-      if (loc.wiki)     geoLinks.push(loc.wiki);
-      if (loc.wikidata) geoLinks.push(loc.wikidata);
-      if (loc.geonames) geoLinks.push(loc.geonames);
-      geoLinks.push(`https://www.google.com/search?q=${encodeURIComponent(loc.city + '%2C+' + loc.state)}`);
-      return {
-        "@type": "Place",
-        address: { "@type": "PostalAddress", addressLocality: loc.city, addressRegion: loc.state },
-        sameAs: geoLinks
-      };
-    });
-    if (actionLocations.length === 1)    action.location = actionLocations[0];
-    else if (actionLocations.length > 1) action.location = actionLocations;
+    // Geo links are all typed in per location now, including the Google search
+    // link the SOP prescribes (`?q=City%2C+State`). That one used to be
+    // generated here and came out double-encoded — the code pre-wrote `%2C+`
+    // and then ran the whole string through encodeURIComponent, escaping the
+    // `%` to `%25`, so every link was broken. Typing it keeps the SOP's exact
+    // value instead of reassembling it.
+    // Dropped in the multi-location shape: the links ride on each branch's
+    // address there, so a Place per city would restate every city a third time.
+    if (!multiHome) {
+      const actionLocations = locations.filter(l => l.city && l.state).map(loc => {
+        const geoLinks = [loc.wiki, loc.wikidata, loc.geonames, loc.google].filter(Boolean);
+        const place = {
+          "@type": "Place",
+          address: { "@type": "PostalAddress", addressLocality: loc.city, addressRegion: loc.state }
+        };
+        // No junk `sameAs: []` for a location with no reference links filled in.
+        if (geoLinks.length) place.sameAs = geoLinks;
+        return place;
+      });
+      if (actionLocations.length === 1)    action.location = actionLocations[0];
+      else if (actionLocations.length > 1) action.location = actionLocations;
+    }
 
     schema.potentialAction = action;
   }
@@ -1827,12 +1951,9 @@ const generators = {
     const knowsAbout = Array.from(document.querySelectorAll('#lb-ka-list .lb-ka-url')).map(i => i.value.trim()).filter(Boolean);
     const locations  = getLBLocations();
 
-    // Main Phone Number is optional: when blank, inherit the first location's
-    // phone so the number isn't typed twice. An explicit value still wins, which
-    // is how a central call-center number differing from the branch phones gets
-    // set. Per-location mode already does this per block (`loc.phone || tel`).
-    const mainTel    = tel || locations.find(l => l.phone)?.phone || '';
-
+    // Main Phone Number is optional. The homepage fallback lives in
+    // buildLBSchema, which knows which block is the main location; per-location
+    // mode does it per block below (`loc.phone || tel`).
     const shared = {
       desc, disambig, price, payment, currency, altNames, addType, identifier, lang,
       services, socialUrls, agent, owner, knowsAbout, foundCity, foundState,
@@ -1845,7 +1966,7 @@ const generators = {
       const schema = buildLBSchema({
         ...shared,
         name, url: homepageUrl, mainPage: homepageUrl, schemaId,
-        tel: mainTel, mapUrl, locations, mode: 'homepage'
+        tel, mapUrl, locations, mode: 'homepage'
       });
       return JSON.stringify(schema, null, 2);
 
@@ -2660,11 +2781,13 @@ function applyLBPreset(value) {
   const preset = orgIndustryPresets[value];
   if (!preset) return;
 
-  // Fill alternate names (one per line for LB textarea)
-  const altInput = document.getElementById('lb-altnames');
-  if (altInput && preset.alternateNames) {
-    altInput.value = preset.alternateNames.join('\n');
-  }
+  // Alternate names are deliberately NOT pre-filled from the vertical preset.
+  // `alternateName` is "an alias for the item" — other names this business goes
+  // by (DBA, former name, abbreviation, common short form). The preset's list is
+  // service and industry terms, which are not aliases of any one business, and
+  // the tool can't know a client's real aliases. Services belong in the
+  // OfferCatalog instead. The preset lists stay in place for the Organization
+  // tab, which still uses them.
 
   // Fill Business Type URL (Wikidata additionalType) for this vertical
   const businessTypeUrlMap = {
