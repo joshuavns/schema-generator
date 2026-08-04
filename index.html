@@ -2449,17 +2449,18 @@ const generators = {
     if (country) addr.addressCountry   = country;
     if (street || city || state || zip) schema.address = addr;
 
-    // Owner
+    // Owner. `owner` to match the Local Business tab and QA's reviewed samples;
+    // `owns` has schema.org range OwnershipInfo/Product rather than a Person.
     if (ownerName) {
-      const owns = { "@type": "Person", name: ownerName };
-      if (ownerKA.length) owns.knowsAbout = ownerKA;
+      const ownerNode = { "@type": "Person", name: ownerName };
+      if (ownerKA.length) ownerNode.knowsAbout = ownerKA;
       if (ownerCity || ownerState) {
         const wAddr = { "@type": "PostalAddress" };
         if (ownerCity)  wAddr.addressLocality = ownerCity;
         if (ownerState) wAddr.addressRegion   = ownerState;
-        owns.workLocation = { "@type": "Place", address: wAddr };
+        ownerNode.workLocation = { "@type": "Place", address: wAddr };
       }
-      schema.owns = owns;
+      schema.owner = ownerNode;
     }
 
     schema.knowsLanguage = "en";
