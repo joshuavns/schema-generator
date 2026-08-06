@@ -1168,7 +1168,22 @@ function cpServiceHTML(index) {
       </div>
       <div class="field"><label>Description</label>
         <textarea class="cp-svc-desc" rows="2" placeholder="Description..."></textarea></div>
+      <div class="field-row cols-2 cp-svc-rating-wrap" style="display:none">
+        <div class="field"><label>Rating Value <span class="hint">(only with real reviews — leave blank if none)</span></label>
+          <input type="text" class="cp-svc-rating" placeholder="e.g. 4.9"></div>
+        <div class="field"><label>Rating Count</label>
+          <input type="text" class="cp-svc-rating-count" placeholder="e.g. 127"></div>
+      </div>
     </div>`;
+}
+
+// Rating fields apply to Product items only: Google's review snippet supports
+// Product but not Service, so they stay hidden until the type is switched.
+function updateCPServiceUI() {
+  document.querySelectorAll('#cp-services .faq-pair').forEach(row => {
+    const wrap = row.querySelector('.cp-svc-rating-wrap');
+    if (wrap) wrap.style.display = row.querySelector('.cp-svc-type')?.value === 'Product' ? '' : 'none';
+  });
 }
 
 function cpFAQHTML(index) {
@@ -1377,6 +1392,10 @@ function renderForm(type) {
     document.getElementById('cp-add-service').addEventListener('click', () => { addCPService(); updatePreview(); });
     document.getElementById('cp-add-faq').addEventListener('click', () => { addCPFAQ(); updatePreview(); });
     document.getElementById('cp-add-location').addEventListener('click', () => { addCPLocation(); updatePreview(); });
+    // Delegated: rows are added and rebuilt, so the Type select can't own this.
+    document.getElementById('cp-services').addEventListener('change', e => {
+      if (e.target.classList.contains('cp-svc-type')) updateCPServiceUI();
+    });
     addCPService();
     addCPService();
     addCPService();
@@ -1750,6 +1769,7 @@ function applyIndustryPreset(key) {
     container.insertAdjacentHTML('beforeend', cpServiceHTML(i));
     container.querySelectorAll('.faq-pair')[i].querySelector('.cp-svc-name').value = name;
   });
+  updateCPServiceUI();
 
   updatePreview();
 }
@@ -1761,9 +1781,14 @@ function moveCPService(index, direction) {
   const targetIndex = index + direction;
   if (targetIndex < 0 || targetIndex >= items.length) return;
 
+  // Carry every field through the rebuild. Type and the rating pair were being
+  // dropped here, so reordering silently reset a Product item back to Service.
   const data = Array.from(items).map(item => ({
-    name: item.querySelector('.cp-svc-name').value,
-    desc: item.querySelector('.cp-svc-desc').value
+    name:        item.querySelector('.cp-svc-name').value,
+    desc:        item.querySelector('.cp-svc-desc').value,
+    type:        item.querySelector('.cp-svc-type')?.value || 'Service',
+    rating:      item.querySelector('.cp-svc-rating')?.value || '',
+    ratingCount: item.querySelector('.cp-svc-rating-count')?.value || ''
   }));
 
   [data[index], data[targetIndex]] = [data[targetIndex], data[index]];
@@ -1774,7 +1799,11 @@ function moveCPService(index, direction) {
     const row = container.querySelectorAll('.faq-pair')[i];
     row.querySelector('.cp-svc-name').value = svc.name;
     row.querySelector('.cp-svc-desc').value = svc.desc;
+    row.querySelector('.cp-svc-type').value = svc.type;
+    row.querySelector('.cp-svc-rating').value = svc.rating;
+    row.querySelector('.cp-svc-rating-count').value = svc.ratingCount;
   });
+  updateCPServiceUI();
 
   updatePreview();
 }
@@ -2520,7 +2549,9 @@ const generators = {
       .map(s => ({
         name: s.querySelector('.cp-svc-name')?.value.trim() || '',
         desc: s.querySelector('.cp-svc-desc')?.value.trim() || '',
-        type: s.querySelector('.cp-svc-type')?.value || 'Service'
+        type: s.querySelector('.cp-svc-type')?.value || 'Service',
+        rating:      s.querySelector('.cp-svc-rating')?.value.trim()       || '',
+        ratingCount: s.querySelector('.cp-svc-rating-count')?.value.trim() || ''
       }))
       .filter(s => s.name || s.desc);
 
@@ -2594,10 +2625,18 @@ const generators = {
         "@type": "OfferCatalog",
         name: catalogName,
         itemListElement: services.map(s => {
+          // aggregateRating is emitted only when BOTH a value and a count are
+          // filled in. Google requires the pair, and inventing either one on a
+          // client with no real reviews is a review-snippet policy violation,
+          // so nothing here is defaulted.
+          const rating = (s.rating && s.ratingCount)
+            ? { aggregateRating: { "@type": "AggregateRating", ratingValue: s.rating, ratingCount: s.ratingCount } }
+            : {};
           const itemOffered = s.type === 'Product'
             ? Object.assign(
                 { "@type": "Product", name: s.name },
-                s.desc ? { description: s.desc } : {}
+                s.desc ? { description: s.desc } : {},
+                rating
               )
             : Object.assign(
                 { "@type": "Service", name: s.name, serviceType: s.name },
