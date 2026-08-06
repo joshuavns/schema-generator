@@ -163,6 +163,27 @@
     }
     .checkbox-item input[type="checkbox"] { cursor: pointer; width: 14px; height: 14px; }
 
+    /* Business hours — a main schedule plus optional exception blocks, for
+       clients whose hours are not the same every day. */
+    .hours-block {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed #e0e0e0;
+    }
+    .hours-warning {
+      display: none;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border: 1px solid #f0c36d;
+      border-left: 3px solid #e8a33d;
+      border-radius: 4px;
+      background: #fdf6e3;
+      color: #7a5a1e;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+    .hours-warning.show { display: block; }
+
     /* Mode toggle */
     .mode-toggle {
       display: flex;
@@ -516,6 +537,10 @@ const forms = {
         <div class="field"><label>Opens</label><input type="time" id="lb-opens" value="00:00"></div>
         <div class="field"><label>Closes</label><input type="time" id="lb-closes" value="23:59"></div>
       </div>
+
+      <div id="lb-hours-entries"></div>
+      <button class="add-btn" type="button" id="lb-add-hours">+ Add</button>
+      <div class="hours-warning" id="lb-hours-warning"></div>
     </div>
 
     <div class="section">
@@ -1282,6 +1307,7 @@ function renderForm(type) {
     document.getElementById('lb-vertical').addEventListener('change', e => {
       applyLBPreset(e.target.value);
       updateLBRadiusUI();
+      updateLBHoursUI();
       updatePreview();
     });
     document.getElementById('lb-add-ka').addEventListener('click', () => { addLBKaRow(); updatePreview(); });
@@ -1305,6 +1331,8 @@ function renderForm(type) {
     });
     document.getElementById('lb-add-location').addEventListener('click', () => { addLocation('lb'); updatePreview(); });
     addLocation('lb');
+    document.getElementById('lb-add-hours').addEventListener('click', () => { addLBHoursEntry(); updatePreview(); });
+    updateLBHoursUI();   // hidden until a home-improvement vertical is picked
   } else if (type === 'service') {
     document.getElementById('svc-add-location').addEventListener('click', () => { addLocation('svc'); updatePreview(); });
     document.getElementById('svc-add-subservice').addEventListener('click', () => { addSvcSubservice(); updatePreview(); });
@@ -1357,6 +1385,173 @@ function renderForm(type) {
 
   panel.addEventListener('input', updatePreview);
   panel.addEventListener('change', updatePreview);
+}
+
+// ── Local Business business hours ────────────────────────────────────────────
+// A main schedule (the days-of-week checkboxes + one time range) plus optional
+// "Additional Schedule" blocks, for clients whose hours are not uniform. The
+// client that prompted this runs 8-5 Mon-Wed, 8-4 Thu-Fri, and weekends by
+// appointment: main block Mon-Wed, one exception block for Thu+Fri, one text
+// block for Sat+Sun.
+//
+// Exception blocks take MULTIPLE days, so Thu+Fri is one block emitting one
+// grouped spec rather than two near-identical nodes. Days are checked against
+// the main block and each other, because a day declared twice with different
+// times is contradictory markup that nothing downstream can resolve, and the
+// main block ships with all days checked, so exceptions require unchecking.
+//
+// Block types:
+//   hours → OpeningHoursSpecification with opens/closes
+//   text  → OpeningHoursSpecification with a free-text `description`, for
+//           "By Appointment". NOTE: `description` is valid here (inherited from
+//           Thing) but no search engine parses it as hours; schema.org has no
+//           by-appointment vocabulary. Kept deliberately for team consistency
+//           (Joshua, 2026-08-06). The signal that actually works is the GBP
+//           "open by appointment" setting plus visible page copy.
+const LB_HOURS_DAYS = [
+  ['Monday', 'Mon'], ['Tuesday', 'Tue'], ['Wednesday', 'Wed'], ['Thursday', 'Thu'],
+  ['Friday', 'Fri'], ['Saturday', 'Sat'], ['Sunday', 'Sun']
+];
+
+// Additional Schedule blocks are shown for the home-improvement trades only
+// (Joshua, 2026-08-06). The trades are where shortened Thu/Fri hours and
+// weekend-by-appointment turn up; the deathcare and care verticals keep the
+// plain single-range field they have always had, so nothing changes for them.
+// Same gating pattern as NO_RADIUS_VERTICALS below.
+const VARIABLE_HOURS_VERTICALS = [
+  'windows-doors', 'window-covering', 'hvac', 'roofing-siding', 'general-contractor'
+];
+
+function updateLBHoursUI() {
+  const vertical = document.getElementById('lb-vertical')?.value || '';
+  const allow    = VARIABLE_HOURS_VERTICALS.includes(vertical);
+  const btn      = document.getElementById('lb-add-hours');
+  const entries  = document.getElementById('lb-hours-entries');
+  const warning  = document.getElementById('lb-hours-warning');
+
+  if (btn) btn.style.display = allow ? '' : 'none';
+  if (entries) {
+    // Cleared, not just hidden: a hidden block would keep emitting its spec
+    // into the schema with no way for the operator to see or reach it.
+    if (!allow) entries.innerHTML = '';
+    entries.style.display = allow ? '' : 'none';
+  }
+  if (warning && !allow) {
+    warning.innerHTML = '';
+    warning.classList.remove('show');
+  }
+}
+
+function lbHoursDayBoxes(cls) {
+  return LB_HOURS_DAYS.map(([day, label]) =>
+    '<label class="checkbox-item"><input type="checkbox" class="' + cls + '" value="' + day + '"> ' + label + '</label>'
+  ).join('');
+}
+
+function addLBHoursEntry() {
+  const wrap = document.getElementById('lb-hours-entries');
+  if (!wrap) return;
+  const block = document.createElement('div');
+  block.className = 'hours-block';
+  block.innerHTML =
+    '<div class="block-header">' +
+      '<span class="block-title">Additional Schedule</span>' +
+      '<button class="remove-btn" type="button">Remove</button>' +
+    '</div>' +
+    '<div class="field"><label>Type</label>' +
+      '<select class="lb-hours-type">' +
+        '<option value="hours">Opening and closing time</option>' +
+        '<option value="text">Custom text</option>' +
+      '</select></div>' +
+    '<div class="field"><label>Days</label>' +
+      '<div class="checkbox-group">' + lbHoursDayBoxes('lb-hours-day') + '</div></div>' +
+    '<div class="field-row cols-2 lb-hours-times">' +
+      '<div class="field"><label>Opens</label>' +
+        '<input type="time" class="lb-hours-opens" value="08:00"></div>' +
+      '<div class="field"><label>Closes</label>' +
+        '<input type="time" class="lb-hours-closes" value="16:00"></div></div>' +
+    '<div class="field lb-hours-text" style="display:none"><label>Text</label>' +
+      '<input type="text" class="lb-hours-desc" value="By Appointment" placeholder="By Appointment"></div>';
+
+  block.querySelector('.lb-hours-type').addEventListener('change', e => {
+    const isText = e.target.value === 'text';
+    block.querySelector('.lb-hours-times').style.display = isText ? 'none' : '';
+    block.querySelector('.lb-hours-text').style.display  = isText ? '' : 'none';
+  });
+  block.querySelector('.remove-btn').addEventListener('click', () => {
+    block.remove();
+    updatePreview();
+  });
+
+  wrap.appendChild(block);
+}
+
+// A day belongs to exactly one schedule. Flags any day claimed more than once
+// across the main block and the exception blocks, and any block with no days.
+function checkLBHoursConflicts() {
+  const box = document.getElementById('lb-hours-warning');
+  if (!box) return;
+
+  const counts = {};
+  const bump = day => { counts[day] = (counts[day] || 0) + 1; };
+  document.querySelectorAll('.lb-day:checked').forEach(c => bump(c.value));
+
+  let emptyBlocks = 0;
+  document.querySelectorAll('#lb-hours-entries .hours-block').forEach(block => {
+    const days = block.querySelectorAll('.lb-hours-day:checked');
+    if (!days.length) emptyBlocks++;
+    days.forEach(c => bump(c.value));
+  });
+
+  const dupes = LB_HOURS_DAYS.map(([day]) => day).filter(day => counts[day] > 1);
+  const msgs = [];
+  if (dupes.length) {
+    msgs.push('<strong>' + dupes.join(', ') + '</strong> ' +
+      (dupes.length === 1 ? 'is' : 'are') +
+      ' set in more than one schedule. Uncheck ' +
+      (dupes.length === 1 ? 'that day' : 'those days') +
+      ' in the main Days of Week row so the exception below is the only one that applies.');
+  }
+  if (emptyBlocks) {
+    msgs.push(emptyBlocks === 1
+      ? 'One Additional Schedule block has no days selected and will be skipped.'
+      : emptyBlocks + ' Additional Schedule blocks have no days selected and will be skipped.');
+  }
+
+  box.innerHTML = msgs.join('<br>');
+  box.classList.toggle('show', msgs.length > 0);
+}
+
+function getLBHoursSpecs() {
+  const specs = [];
+  const spec  = days => ({
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: days.length === 1 ? days[0] : days
+  });
+
+  const mainDays = Array.from(document.querySelectorAll('.lb-day:checked')).map(c => c.value);
+  if (mainDays.length) {
+    specs.push(Object.assign(spec(mainDays), {
+      opens:  document.getElementById('lb-opens')?.value  || '00:00',
+      closes: document.getElementById('lb-closes')?.value || '23:59'
+    }));
+  }
+
+  document.querySelectorAll('#lb-hours-entries .hours-block').forEach(block => {
+    const days = Array.from(block.querySelectorAll('.lb-hours-day:checked')).map(c => c.value);
+    if (!days.length) return;          // nothing selected: no node rather than a dayless one
+    if (block.querySelector('.lb-hours-type').value === 'text') {
+      const text = block.querySelector('.lb-hours-desc').value.trim();
+      specs.push(Object.assign(spec(days), { description: text || 'By Appointment' }));
+    } else {
+      specs.push(Object.assign(spec(days), {
+        opens:  block.querySelector('.lb-hours-opens').value  || '00:00',
+        closes: block.querySelector('.lb-hours-closes').value || '23:59'
+      }));
+    }
+  });
+
+  return specs;
 }
 
 // ── Local Business additionalType / identifier row helpers ───────────────────
@@ -1642,7 +1837,12 @@ function getSvcLocations(prefix) {
   }));
 }
 
+// Phone placement: with a single location the number belongs on the business
+// node, matching the LocalBusiness builder above which keeps no telephone in its
+// address objects. With two or more locations it stays inside each PostalAddress,
+// since that is the only thing tying a number to its branch.
 function buildSvcAddressArray(locations) {
+  const multiLoc = locations.length > 1;
   return locations.map(loc => {
     const addr = { "@type": "PostalAddress" };
     if (loc.street)  addr.streetAddress   = loc.street;
@@ -1650,7 +1850,7 @@ function buildSvcAddressArray(locations) {
     if (loc.state)   addr.addressRegion    = loc.state;
     if (loc.zip)     addr.postalCode       = loc.zip;
     if (loc.country) addr.addressCountry   = loc.country;
-    if (loc.phone)   addr.telephone        = loc.phone;
+    if (loc.phone && multiLoc) addr.telephone = loc.phone;
     return addr;
   }).filter(a => Object.keys(a).length > 1);
 }
@@ -1681,12 +1881,12 @@ function buildLBSchema(opts) {
   // opts: { name, url, mainPage, id, tel, mapUrl, image, desc, disambig, price,
   //         payment, currency, altNames, addTypes, identifiers, lang, services,
   //         socialUrls, agent, owner, knowsAbout, foundCity, foundState,
-  //         days, opens, closes, locations, mode }
+  //         hoursSpecs, locations, mode }
   const {
     name, url, mainPage, schemaId, tel, mapUrl, image, desc, disambig, price,
     payment, currency, altNames, addTypes, identifiers, lang,
     services, socialUrls, agent, owner, knowsAbout,
-    foundCity, foundState, days, opens, closes, locations, mode
+    foundCity, foundState, hoursSpecs, locations, mode
   } = opts;
 
   const isHome = mode === 'homepage';
@@ -1874,15 +2074,11 @@ function buildLBSchema(opts) {
     };
   }
 
-  // Hours
-  if (days.length) {
-    schema.openingHoursSpecification = {
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: days,
-      opens,
-      closes
-    };
-  }
+  // Hours. One schedule stays a single object (unchanged output for clients on
+  // uniform hours); variable hours become an array of grouped specs.
+  const specs = hoursSpecs || [];
+  if (specs.length === 1)     schema.openingHoursSpecification = specs[0];
+  else if (specs.length > 1)  schema.openingHoursSpecification = specs;
 
   // areaServed — GeoCircle per location. Per-location mode only: in homepage
   // mode each branch now carries its own GeoCircle on its `department` node, so
@@ -1984,11 +2180,10 @@ const generators = {
     const owner      = v('lb-owner');
     const foundCity  = v('lb-founding-city');
     const foundState = v('lb-founding-state');
-    const opens      = document.getElementById('lb-opens')?.value  || '00:00';
-    const closes     = document.getElementById('lb-closes')?.value || '23:59';
+    const hoursSpecs = getLBHoursSpecs();
+    checkLBHoursConflicts();   // surfaces days claimed by two schedules at once
 
     const payment    = Array.from(document.querySelectorAll('.lb-payment:checked')).map(c => c.value);
-    const days       = Array.from(document.querySelectorAll('.lb-day:checked')).map(c => c.value);
     const altNames   = altNamesRaw ? altNamesRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
     const services   = servicesRaw ? servicesRaw.split('\n').map(s => s.trim()).filter(Boolean) : [];
     const socialUrls = socialRaw   ? socialRaw.split('\n').map(s => s.trim()).filter(Boolean)   : [];
@@ -2001,7 +2196,7 @@ const generators = {
     const shared = {
       desc, disambig, price, payment, currency, altNames, addTypes, identifiers, lang,
       services, socialUrls, agent, owner, knowsAbout, foundCity, foundState,
-      days, opens, closes, image
+      hoursSpecs, image
     };
 
     if (lbMode === 'homepage') {
@@ -2087,9 +2282,11 @@ const generators = {
     if (bizUrl)     provider.url        = bizUrl;
     provider.priceRange = priceRange;
     if (logo)       provider.logo       = logo;
-    // Phone lives on each Location's PostalAddress, not on the provider.
     if (addresses.length === 1)    provider.address = addresses[0];
     else if (addresses.length > 1) provider.address = addresses;
+    // Single location: the phone is hoisted here so it appears exactly once.
+    // Multiple: it stays inside each Location's PostalAddress instead.
+    if (locations.length === 1 && locations[0].phone) provider.telephone = locations[0].phone;
 
     // hasOfferCatalog
     const catalogName     = v('svc-catalog-name');
@@ -2157,7 +2354,10 @@ const generators = {
     if (logo)      business.logo       = logo;
     if (addresses.length === 1)    business.address = addresses[0];
     else if (addresses.length > 1) business.address = addresses;
-    if (telephone) business.telephone  = telephone;
+    // The Business section's Telephone field wins; a single Location's phone is
+    // the fallback so filling either one (or both) still yields one number.
+    const resolvedPhone = telephone || (locations.length === 1 ? locations[0].phone : '');
+    if (resolvedPhone) business.telephone = resolvedPhone;
 
     // Reference the business by @id when we have one; otherwise inline it.
     const brandRef = bizId ? { "@id": bizId } : business;
