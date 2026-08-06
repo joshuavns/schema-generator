@@ -730,6 +730,14 @@ const forms = {
   `,
 
   'faq': () => `
+    <div class="info-note">Standalone <strong>FAQPage</strong> node. The Page URL anchors it as <code>&lt;page URL&gt;/#faq</code>, keeping it distinct from the WebPage node most SEO plugins already emit.</div>
+    <div class="section">
+      <div class="section-title">Page Details</div>
+      <div class="field"><label>Page URL <span class="hint">(anchors the node as &lt;URL&gt;/#faq)</span></label>
+        <input type="url" id="faq-url" placeholder="https://www.example.com/products/doors/"></div>
+      <div class="field"><label>Executive Summary <span class="hint">(optional &mdash; only add it if this text is visible on the page)</span></label>
+        <textarea id="faq-summary" rows="3" placeholder="Short summary of what these FAQs cover..."></textarea></div>
+    </div>
     <div class="section">
       <div class="section-title">FAQ Questions &amp; Answers</div>
       <div id="faq-pairs"></div>
@@ -2432,18 +2440,26 @@ const generators = {
   },
 
   'faq': () => {
+    const v = id => document.getElementById(id)?.value.trim() || '';
+    const pageUrl = v('faq-url'), summary = v('faq-summary');
     const pairs = Array.from(document.querySelectorAll('.faq-pair'))
       .map(p => ({ q: p.querySelector('.faq-q')?.value.trim() || '', a: p.querySelector('.faq-a')?.value.trim() || '' }))
       .filter(p => p.q || p.a);
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: pairs.map(p => ({
-        "@type": "Question",
-        name: p.q,
-        acceptedAnswer: { "@type": "Answer", text: p.a }
-      }))
-    };
+
+    const schema = { "@context": "https://schema.org", "@type": "FAQPage" };
+    // Anchor to the page with a /#faq fragment rather than the bare page URL, so
+    // the node stays a distinct entity from the WebPage node Yoast/RankMath emit
+    // at the same address. Matches the /#faq form used by the other tabs.
+    if (pageUrl) schema["@id"] = pageUrl.replace(/\/$/, '') + '/#faq';
+    // Executive summary. `description` over `abstract` — semantically looser but
+    // the one parsers actually read. Only valid if the text is on the page.
+    if (summary) schema.description = summary;
+
+    schema.mainEntity = pairs.map(p => ({
+      "@type": "Question",
+      name: p.q,
+      acceptedAnswer: { "@type": "Answer", text: p.a }
+    }));
     return JSON.stringify(schema, null, 2);
   },
 
