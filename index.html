@@ -2500,7 +2500,12 @@ const generators = {
     const targetState    = v('cp-target-state');
     const catalogInput   = v('cp-catalog-name');
 
-    const lbId     = homepageUrl ? homepageUrl.replace(/\/$/, '') + '/#' + schemaIdSuffix : '';
+    // The LocalBusiness @id anchors to the page the schema installs on, not the
+    // homepage. A city page stands in as the location landing page (per the SOP),
+    // and each one asserts its own areaServed + OfferCatalog — reusing one
+    // homepage-anchored @id across every city page would pile contradictory
+    // claims onto a single entity. Matches the /#faq node below.
+    const lbId     = pageUrl     ? pageUrl.replace(/\/$/, '')     + '/#' + schemaIdSuffix : '';
     const faqId    = pageUrl     ? pageUrl.replace(/\/$/, '')     + '/#faq'               : '';
     const areaName = [targetCity, targetState].filter(Boolean).join(', ');
     const catalogName = catalogInput || (name && areaName ? `Our ${name} Services in ${areaName}` : '');
