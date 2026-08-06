@@ -1760,11 +1760,17 @@ function applyIndustryPreset(key) {
   const preset = cpIndustryPresets[key];
   if (!preset) return;
 
-  // The preset seeds the first Business Type URL; further rows are added by hand.
+  // The preset seeds one row per Business Type URL: the Wikipedia/Wikidata entry
+  // plus the productontology class(es) for the vertical. productontology URLs are
+  // class URIs, so additionalType is where they belong (the Local Business tab
+  // carries them under identifier, which is for real identifiers — DUNS, tax ID,
+  // licence number — and is a separate thing to raise with QA). Verticals that
+  // are genuinely two businesses, like Windows & Doors, seed a row for each.
+  // Extra rows are added by hand.
   const addTypeList = document.getElementById('cp-addtype-list');
   if (addTypeList) {
     addTypeList.innerHTML = '';
-    addCPAddTypeRow(preset.additionalType);
+    (preset.additionalTypes || []).forEach(url => addCPAddTypeRow(url));
   }
   const schemaIdField = document.getElementById('cp-schema-id');
   if (schemaIdField) schemaIdField.value = preset.schemaId;
@@ -2784,19 +2790,22 @@ const generators = {
 const cpIndustryPresets = {
   'funeral': {
     label: 'Funeral Homes & Cremation',
-    additionalType: 'https://en.wikipedia.org/wiki/Funeral_home',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Funeral_home',
+                      'http://www.productontology.org/id/Funeral_home'],
     schemaId: 'funeralhome',
     services: ['Burial Services','Cremation Services','Funeral Planning','Pre-Planning Services','Memorial Services','Grief Support & Aftercare','Veteran Funeral Honors']
   },
   'assisted-living': {
     label: 'Assisted Living Facilities',
-    additionalType: 'https://en.wikipedia.org/wiki/Assisted_living',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Assisted_living',
+                      'http://www.productontology.org/id/Assisted_living'],
     schemaId: 'assistedliving',
     services: ['Personal Care Services','Medication Management','Dining Services','Social and Recreational Activities','Housekeeping and Maintenance','Memory Care','Respite Care']
   },
   'home-care': {
     label: 'In-Home Care (Non-Medical)',
-    additionalType: 'https://en.wikipedia.org/wiki/Home_care',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Home_care',
+                      'http://www.productontology.org/id/Home_care'],
     schemaId: 'homecare',
     services: ['Companion Care','Personal Care',"Alzheimer's & Dementia Care","Parkinson's Care",'Respite Care','Transitional Care','Chronic Disease Care','Veterans Care & VA Benefits Assistance','Surgery Assistance & Sitter Services','End-of-Life Support Care']
   },
@@ -2804,43 +2813,52 @@ const cpIndustryPresets = {
     label: 'Home Health',
     // /wiki/Home_health_care redirects to /wiki/Home_care, which would collide
     // with the 'home-care' preset above. Home_health_nursing is the distinct article.
-    additionalType: 'https://en.wikipedia.org/wiki/Home_health_nursing',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Home_health_nursing',
+                      'http://www.productontology.org/id/Home_health_nursing'],
     schemaId: 'homehealthcare',
     services: ['Skilled Nursing Care','Physical Therapy','Occupational Therapy','Speech-Language Pathology','Home Health Aide Services','Medical Social Work']
   },
   'windows-doors': {
     label: 'Windows & Doors',
-    additionalType: 'https://en.wikipedia.org/wiki/Window',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Window',
+                      'http://www.productontology.org/id/Window',
+                      'http://www.productontology.org/id/Door'],
     schemaId: 'windowsdoors',
     services: ['Replacement Windows','Replacement Doors','Energy-Efficient Windows','Entry Doors','Patio Doors','Storm Windows','Window and Door Installation']
   },
   'window-covering': {
     label: 'Window Covering',
-    additionalType: 'https://en.wikipedia.org/wiki/Window_covering',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Window_covering',
+                      'http://www.productontology.org/id/Window_covering'],
     schemaId: 'windowcovering',
     services: ['Custom Blinds','Custom Shades','Custom Shutters','Draperies and Curtains','Motorization','In-Home Consultation','Professional Installation']
   },
   'hvac': {
     label: 'HVAC & Heating / Cooling',
-    additionalType: 'https://en.wikipedia.org/wiki/Heating,_ventilation,_and_air_conditioning',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Heating,_ventilation,_and_air_conditioning',
+                      'http://www.productontology.org/id/HVAC'],
     schemaId: 'hvac',
     services: ['AC Repair','AC Installation','Heating Repair','Furnace Installation','Heat Pump Services','Ductless Mini-Split Systems','Duct Cleaning and Sealing','Indoor Air Quality','Preventive Maintenance Plans','Emergency HVAC Service']
   },
   'roofing-siding': {
     label: 'Roofing & Siding',
-    additionalType: 'https://en.wikipedia.org/wiki/Roofing',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Roofing',
+                      'http://www.productontology.org/id/Roof',
+                      'http://www.productontology.org/id/Siding'],
     schemaId: 'roofingsiding',
     services: ['Roof Replacement','Roof Repair','Storm and Hail Damage Repair','Shingle Roofing','Metal Roofing','Flat Roofing','Siding Replacement','Siding Repair','Gutter Installation','Roof Inspections']
   },
   'general-contractor': {
     label: 'General Contractor / Home Services',
-    additionalType: 'https://en.wikipedia.org/wiki/General_contractor',
+    additionalTypes: ['https://en.wikipedia.org/wiki/General_contractor',
+                      'http://www.productontology.org/id/General_contractor'],
     schemaId: 'generalcontractor',
     services: ['Kitchen Remodeling','Bathroom Remodeling','Home Additions','Basement Finishing','Whole-Home Renovation','Custom Home Building','Deck and Patio Construction','Exterior Renovation','Design and Build Services']
   },
   'cemetery': {
     label: 'Cemeteries',
-    additionalType: 'https://en.wikipedia.org/wiki/Cemetery',
+    additionalTypes: ['https://en.wikipedia.org/wiki/Cemetery',
+                      'http://www.productontology.org/id/Cemetery'],
     schemaId: 'cemetery',
     services: ['Burial Plots','Mausoleum Crypts','Cremation Niches','Ground Burial Services','Pre-Planning Services','Veteran Memorial Services','Memorial Markers and Monuments','Grave Maintenance']
   }
