@@ -787,8 +787,9 @@ const forms = {
         <input type="url" id="cp-url" placeholder="https://www.example.com/"></div>
       <div class="field"><label>Image URL</label>
         <input type="url" id="cp-image" placeholder="https://..."></div>
-      <div class="field"><label>Additional Type <span class="hint">(Wikipedia URL for business type)</span></label>
-        <input type="url" id="cp-addtype" placeholder="https://en.wikipedia.org/wiki/Siding_(construction)"></div>
+      <div class="field"><label>Additional Type <span class="hint">(Wikipedia/Wikidata URL &mdash; add one per type the client actually is, e.g. windows <em>and</em> doors)</span></label>
+        <div id="cp-addtype-list"></div>
+        <button class="add-btn" id="cp-add-addtype">+ Add Business Type URL</button></div>
     </div>
 
     <div class="section">
@@ -1385,6 +1386,7 @@ function renderForm(type) {
     document.getElementById('cp-industry').addEventListener('change', e => {
       applyIndustryPreset(e.target.value);
     });
+    document.getElementById('cp-add-addtype').addEventListener('click', () => { addCPAddTypeRow(); updatePreview(); });
     document.getElementById('cp-add-service').addEventListener('click', () => { addCPService(); updatePreview(); });
     document.getElementById('cp-add-faq').addEventListener('click', () => { addCPFAQ(); updatePreview(); });
     document.getElementById('cp-add-location').addEventListener('click', () => { addCPLocation(); updatePreview(); });
@@ -1392,6 +1394,7 @@ function renderForm(type) {
     document.getElementById('cp-services').addEventListener('change', e => {
       if (e.target.classList.contains('cp-svc-type')) updateCPServiceUI();
     });
+    addCPAddTypeRow();
     addCPService();
     addCPService();
     addCPService();
@@ -1598,6 +1601,10 @@ const addLBAddTypeRow    = (url = '') =>
   addLBRow('lb-addtype-list', 'lb-addtype-url', url, 'https://www.wikidata.org/wiki/Q1466031');
 const addLBIdentifierRow = (url = '') =>
   addLBRow('lb-identifier-list', 'lb-identifier-url', url, 'http://www.productontology.org/id/...');
+// addLBRow is fully parameterised, so the City Page tab reuses it for the same
+// repeatable additionalType treatment (a client is often more than one thing).
+const addCPAddTypeRow    = (url = '') =>
+  addLBRow('cp-addtype-list', 'cp-addtype-url', url, 'https://en.wikipedia.org/wiki/Window');
 
 // ── Local Business knowsAbout row helper ─────────────────────────────────────
 function addLBKaRow(url = '') {
@@ -1753,9 +1760,13 @@ function applyIndustryPreset(key) {
   const preset = cpIndustryPresets[key];
   if (!preset) return;
 
-  const addTypeField = document.getElementById('cp-addtype');
+  // The preset seeds the first Business Type URL; further rows are added by hand.
+  const addTypeList = document.getElementById('cp-addtype-list');
+  if (addTypeList) {
+    addTypeList.innerHTML = '';
+    addCPAddTypeRow(preset.additionalType);
+  }
   const schemaIdField = document.getElementById('cp-schema-id');
-  if (addTypeField)  addTypeField.value  = preset.additionalType;
   if (schemaIdField) schemaIdField.value = preset.schemaId;
 
   // Repopulate services
@@ -2492,7 +2503,10 @@ const generators = {
     const name           = v('cp-name');
     const homepageUrl    = v('cp-url');
     const image          = v('cp-image');
-    const addType        = v('cp-addtype');
+    // additionalType is an array in schema.org: a client can legitimately be
+    // several things at once, matching the Local Business tab's treatment.
+    const addTypes       = Array.from(document.querySelectorAll('#cp-addtype-list .cp-addtype-url'))
+      .map(i => i.value.trim()).filter(Boolean);
     const targetCity     = v('cp-target-city');
     const targetState    = v('cp-target-state');
     const catalogInput   = v('cp-catalog-name');
@@ -2553,8 +2567,8 @@ const generators = {
     // One location: telephone at top level; two or more: telephone lives in each department.
     if (singleLoc && singleLoc.phone) lb.telephone = singleLoc.phone;
 
-    if (image)   lb.image          = image;
-    if (addType) lb.additionalType = addType;
+    if (image)           lb.image          = image;
+    if (addTypes.length) lb.additionalType = addTypes;
 
     if (locations.length >= 2) {
       lb.department = locations.map(loc => {
