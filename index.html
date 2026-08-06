@@ -1278,8 +1278,9 @@ function removeProdItem(index) {
 }
 
 // ── City Page location block HTML ─────────────────────────────────────────────
-// The Location Name field is hidden by default and only shown (via
-// updateCPLocationUI) when there is more than one location.
+// The Location Name and Location Page URL fields are hidden by default and only
+// shown (via updateCPLocationUI) when there is more than one location — they
+// only feed the department[] nodes, which a single location never emits.
 function cpLocationHTML(index) {
   return `
     <div class="location-block" data-index="${index}">
@@ -1289,6 +1290,8 @@ function cpLocationHTML(index) {
       </div>
       <div class="field cp-loc-name-wrap" style="display:none"><label>Location Name <span class="hint">(distinguishes this location, e.g. Island Park)</span></label>
         <input type="text" class="cp-loc-name" placeholder="e.g. Island Park"></div>
+      <div class="field cp-loc-url-wrap" style="display:none"><label>Location Page URL <span class="hint">(this branch's own page, if it has one — anchors its @id)</span></label>
+        <input type="url" class="cp-loc-url" placeholder="https://www.example.com/island-park-ny/"></div>
       <div class="field"><label>Phone</label>
         <input type="text" class="cp-loc-phone" placeholder="(555) 123-4567"></div>
       <div class="field"><label>Street Address</label>
@@ -1793,7 +1796,8 @@ function removeCPLocation(index) {
   updatePreview();
 }
 
-// Show the Location Name field + numbered titles only when there's >1 location.
+// Show the Location Name + Location Page URL fields and numbered titles only
+// when there's >1 location (i.e. only when department[] will be emitted).
 function updateCPLocationUI() {
   const blocks = document.querySelectorAll('#cp-locations .location-block');
   const multi = blocks.length > 1;
@@ -1803,6 +1807,8 @@ function updateCPLocationUI() {
     if (title) title.textContent = multi ? `Location ${i + 1}` : 'Location';
     const nameWrap = b.querySelector('.cp-loc-name-wrap');
     if (nameWrap) nameWrap.style.display = multi ? '' : 'none';
+    const urlWrap = b.querySelector('.cp-loc-url-wrap');
+    if (urlWrap) urlWrap.style.display = multi ? '' : 'none';
     const rm = b.querySelector('.remove-btn');
     if (rm) rm.setAttribute('onclick', `removeCPLocation(${i})`);
   });
@@ -2535,6 +2541,7 @@ const generators = {
     const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const locations = Array.from(document.querySelectorAll('#cp-locations .location-block')).map(b => ({
       name:    b.querySelector('.cp-loc-name')?.value.trim()    || '',
+      url:     b.querySelector('.cp-loc-url')?.value.trim()     || '',
       phone:   b.querySelector('.cp-loc-phone')?.value.trim()   || '',
       street:  b.querySelector('.cp-loc-street')?.value.trim()  || '',
       city:    b.querySelector('.cp-loc-city')?.value.trim()    || '',
@@ -2559,9 +2566,17 @@ const generators = {
     if (locations.length >= 2) {
       lb.department = locations.map(loc => {
         const dept = { "@type": "LocalBusiness" };
+        // A branch is a stable entity, so its @id anchors to its own location
+        // page when the client has one (SOP form: <location URL>/#business) —
+        // that way the city page references the same node the branch page
+        // defines, instead of minting a second entity for the same branch.
+        // With no branch page, fall back to the installing page. Never the
+        // homepage: that gave every city page's departments identical @ids.
         const slug = slugify(loc.name || loc.city);
-        if (homepageUrl && slug) dept["@id"] = homepageUrl.replace(/\/$/, '') + '/#' + slug + '-location';
+        if (loc.url)              dept["@id"] = loc.url.replace(/\/$/, '') + '/#business';
+        else if (pageUrl && slug) dept["@id"] = pageUrl.replace(/\/$/, '') + '/#' + slug + '-location';
         dept.name = (name && loc.name) ? `${name} - ${loc.name}` : (loc.name || name || '');
+        if (loc.url) dept.url = loc.url;
         if (loc.phone) dept.telephone = loc.phone;
         const dAddr = buildAddr(loc);
         if (dAddr) dept.address = dAddr;
