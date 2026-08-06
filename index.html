@@ -1151,11 +1151,7 @@ function cpServiceHTML(index) {
     <div class="faq-pair" data-index="${index}">
       <div class="faq-pair-header">
         <span class="faq-pair-num">Item ${index + 1}</span>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <button class="remove-btn" onclick="moveCPService(${index},-1)" title="Move up">▲</button>
-          <button class="remove-btn" onclick="moveCPService(${index},1)" title="Move down">▼</button>
-          <button class="remove-btn" onclick="removeCPService(${index})">Remove</button>
-        </div>
+        <button class="remove-btn" onclick="removeCPService(${index})">Remove</button>
       </div>
       <div class="field-row cols-2">
         <div class="field"><label>Type</label>
@@ -1169,10 +1165,10 @@ function cpServiceHTML(index) {
       <div class="field"><label>Description</label>
         <textarea class="cp-svc-desc" rows="2" placeholder="Description..."></textarea></div>
       <div class="field-row cols-2 cp-svc-rating-wrap" style="display:none">
-        <div class="field"><label>Rating Value <span class="hint">(only with real reviews — leave blank if none)</span></label>
-          <input type="text" class="cp-svc-rating" placeholder="e.g. 4.9"></div>
+        <div class="field"><label>Rating Value <span class="hint">(replace with the client's real review data)</span></label>
+          <input type="text" class="cp-svc-rating" value="5"></div>
         <div class="field"><label>Rating Count</label>
-          <input type="text" class="cp-svc-rating-count" placeholder="e.g. 127"></div>
+          <input type="text" class="cp-svc-rating-count" value="5"></div>
       </div>
     </div>`;
 }
@@ -1726,7 +1722,7 @@ function removeCPService(index) {
   items[index].remove();
   container.querySelectorAll('.faq-pair').forEach((item, i) => {
     item.dataset.index = i;
-    item.querySelector('.faq-pair-num').textContent = `Service ${i + 1}`;
+    item.querySelector('.faq-pair-num').textContent = `Item ${i + 1}`;
     item.querySelector('.remove-btn').setAttribute('onclick', `removeCPService(${i})`);
   });
   updatePreview();
@@ -1768,40 +1764,6 @@ function applyIndustryPreset(key) {
   preset.services.forEach((name, i) => {
     container.insertAdjacentHTML('beforeend', cpServiceHTML(i));
     container.querySelectorAll('.faq-pair')[i].querySelector('.cp-svc-name').value = name;
-  });
-  updateCPServiceUI();
-
-  updatePreview();
-}
-
-// ── City Page service reorder ──────────────────────────────────────────────────
-function moveCPService(index, direction) {
-  const container = document.getElementById('cp-services');
-  const items = container.querySelectorAll('.faq-pair');
-  const targetIndex = index + direction;
-  if (targetIndex < 0 || targetIndex >= items.length) return;
-
-  // Carry every field through the rebuild. Type and the rating pair were being
-  // dropped here, so reordering silently reset a Product item back to Service.
-  const data = Array.from(items).map(item => ({
-    name:        item.querySelector('.cp-svc-name').value,
-    desc:        item.querySelector('.cp-svc-desc').value,
-    type:        item.querySelector('.cp-svc-type')?.value || 'Service',
-    rating:      item.querySelector('.cp-svc-rating')?.value || '',
-    ratingCount: item.querySelector('.cp-svc-rating-count')?.value || ''
-  }));
-
-  [data[index], data[targetIndex]] = [data[targetIndex], data[index]];
-
-  container.innerHTML = '';
-  data.forEach((svc, i) => {
-    container.insertAdjacentHTML('beforeend', cpServiceHTML(i));
-    const row = container.querySelectorAll('.faq-pair')[i];
-    row.querySelector('.cp-svc-name').value = svc.name;
-    row.querySelector('.cp-svc-desc').value = svc.desc;
-    row.querySelector('.cp-svc-type').value = svc.type;
-    row.querySelector('.cp-svc-rating').value = svc.rating;
-    row.querySelector('.cp-svc-rating-count').value = svc.ratingCount;
   });
   updateCPServiceUI();
 
@@ -2625,10 +2587,10 @@ const generators = {
         "@type": "OfferCatalog",
         name: catalogName,
         itemListElement: services.map(s => {
-          // aggregateRating is emitted only when BOTH a value and a count are
-          // filled in. Google requires the pair, and inventing either one on a
-          // client with no real reviews is a review-snippet policy violation,
-          // so nothing here is defaulted.
+          // Both fields default to 5, matching the Product tab (Joshua's call,
+          // 2026-08-07). Still guarded on both being present: Google requires
+          // ratingValue AND a count, so a half-filled pair emits nothing rather
+          // than an invalid AggregateRating.
           const rating = (s.rating && s.ratingCount)
             ? { aggregateRating: { "@type": "AggregateRating", ratingValue: s.rating, ratingCount: s.ratingCount } }
             : {};
